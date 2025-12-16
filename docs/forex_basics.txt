@@ -1,0 +1,42 @@
+Forex (Foreign Exchange) Basics Guide
+
+What is Forex?
+The Foreign Exchange market (Forex or FX) is the global marketplace for trading currencies. It's the largest and most liquid financial market in the world, with daily trading volume exceeding $7 trillion.
+
+Key Features:
+- 24-hour market (5 days/week)
+- Highly liquid
+- Low transaction costs
+- High leverage available
+- Decentralized (no central exchange)
+- Accessible to retail traders
+
+Currency Pairs:
+- EUR/USD (Euro/US Dollar)
+- USD/JPY (Dollar/Yen)
+- GBP/USD (Pound/Dollar)
+- USD/CHF (Dollar/Swiss Franc)
+- AUD/USD (Aussie/Dollar)
+- USD/CAD (Dollar/Canadian)
+- NZD/USD (Kiwi/Dollar)
+
+Pip:
+- Smallest price movement
+- Usually 4th decimal (0.0001)
+- For JPY pairs, 2nd decimal (0.01)
+- EUR/USD 1.1050 to 1.1051 = 1 pip move
+
+Lot Size:
+- Standard Lot: 100,000 units
+- Mini Lot: 10,000 units
+- Micro Lot: 1,000 units
+- Nano Lot: 100 units
+
+Getting Started:
+1. Learn basics thoroughly
+2. Practice on demo account
+3. Start with major pairs
+4. Use low leverage initially
+5. Focus on risk management
+6. Keep detailed trading journal
+7. Start with small real money positions"""

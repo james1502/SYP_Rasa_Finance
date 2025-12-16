@@ -1,0 +1,27 @@
+Nikkei 225 Index
+
+The Nikkei 225, commonly called the Nikkei, is Japan's premier stock market index. It tracks 225 large, publicly-owned companies on the Tokyo Stock Exchange and serves as the primary barometer of Japanese stock market performance.
+
+Key Facts:
+- Launched in 1950 (retroactively calculated to 1949)
+- Contains 225 blue-chip companies from the Tokyo Stock Exchange
+- Price-weighted index (similar to the Dow Jones)
+- Named after Nihon Keizai Shimbun (Japan Economic Newspaper)
+
+Composition:
+The index includes companies from various sectors: technology, automotive, finance, retail, and manufacturing. Japan's industrial giants and innovative tech firms are well represented.
+
+Major Companies:
+Leading constituents include Toyota, Sony, SoftBank, Fast Retailing (Uniqlo), Keyence, Mitsubishi UFJ Financial, Tokyo Electron, Recruit Holdings, and Nintendo.
+
+Historical Context:
+The Nikkei reached an all-time high of 38,915 in December 1989 during Japan's asset price bubble. It took decades to recover, finally surpassing that level in 2024, reflecting Japan's "Lost Decades" and recent economic revival.
+
+Recent Performance:
+After years of stagnation, the Nikkei has shown renewed strength in the 2020s due to corporate reforms, weakening yen, and increased foreign investment.
+
+Investment Considerations:
+The index is calculated in Japanese yen, so international investors face currency risk. Japan's aging population and demographic challenges affect long-term growth prospects.
+
+Investment Options:
+Popular ETFs include EWJ (iShares MSCI Japan ETF), DXJ (WisdomTree Japan Hedged Equity Fund), and NKY futures for direct exposure.

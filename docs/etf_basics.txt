@@ -1,0 +1,173 @@
+Exchange-Traded Funds (ETFs) Guide
+
+What is an ETF?
+An Exchange-Traded Fund (ETF) is an investment fund that trades on stock exchanges, similar to individual stocks. ETFs hold assets such as stocks, bonds, commodities, or a mix, and generally track an underlying index.
+
+Key Features:
+- Trades like a stock on exchanges
+- Typically tracks an index or sector
+- Offers diversification in single purchase
+- Generally lower fees than mutual funds
+- Transparent holdings
+- Tax efficient
+
+ETF vs Mutual Fund:
+
+ETFs:
+- Trade throughout the day
+- Real-time pricing
+- Generally lower expense ratios
+- No minimum investment (1 share)
+- More tax efficient
+- Can be shorted/margined
+
+Mutual Funds:
+- Trade once daily at NAV
+- End-of-day pricing
+- Often higher fees
+- May have minimums ($1,000+)
+- Less tax efficient
+- Limited trading flexibility
+
+Types of ETFs:
+
+Index ETFs:
+- Track market indices (S&P 500, NASDAQ)
+- Examples: SPY, VOO, QQQ, IVV
+- Lowest cost, most liquid
+- Core portfolio holdings
+
+Sector ETFs:
+- Focus on specific industries
+- Technology: XLK, VGT
+- Healthcare: XLV, VHT
+- Financials: XLF, VFH
+- Energy: XLE, VDE
+
+Bond ETFs:
+- Track fixed income markets
+- Treasury: TLT, IEF, SHY
+- Corporate: LQD, HYG
+- Municipal: MUB
+- International: BNDX
+
+International ETFs:
+- Developed Markets: EFA, VEA
+- Emerging Markets: EEM, VWO
+- Country-specific: EWJ (Japan), FXI (China)
+- Regional: VGK (Europe)
+
+Commodity ETFs:
+- Gold: GLD, IAU
+- Silver: SLV
+- Oil: USO
+- Broad commodities: DJP
+
+Thematic ETFs:
+- Clean energy: ICLN, QCLN
+- Cybersecurity: HACK, CIBR
+- Blockchain: BLOK
+- AI/Robotics: BOTZ, ROBO
+
+Factor ETFs (Smart Beta):
+- Value: VTV, IWD
+- Growth: VUG, IWF
+- Momentum: MTUM
+- Quality: QUAL
+- Dividend: VIG, SCHD
+
+Leveraged and Inverse ETFs:
+- 2x/3x leveraged: TQQQ, SQQQ
+- Inverse: SH, PSQ
+- Daily rebalancing (not for long-term)
+- Higher fees and risks
+
+Cryptocurrency ETFs:
+- Bitcoin Spot ETFs: IBIT, FBTC, GBTC
+- Ethereum ETFs: ETHA, FETH
+- Provide crypto exposure without direct ownership
+
+Key ETF Metrics:
+
+Expense Ratio:
+- Annual management fee
+- Index ETFs: 0.03-0.20%
+- Active ETFs: 0.50-1.00%
+- Lower is better
+
+Assets Under Management (AUM):
+- Total value of ETF assets
+- Larger = more liquid, tighter spreads
+- Prefer ETFs with $100M+ AUM
+
+Trading Volume:
+- Average daily shares traded
+- Higher volume = better liquidity
+- Lower bid-ask spreads
+
+Tracking Error:
+- Deviation from underlying index
+- Lower is better
+- Affected by fees, sampling, timing
+
+Bid-Ask Spread:
+- Difference between buy and sell price
+- Lower = lower trading cost
+- Larger ETFs have tighter spreads
+
+ETF Investment Strategies:
+
+Core-Satellite:
+- Core: Low-cost broad market ETFs (70-80%)
+- Satellite: Sector/thematic ETFs (20-30%)
+- Combines passive and active approaches
+
+Dollar-Cost Averaging:
+- Invest fixed amount regularly
+- Works well with commission-free ETFs
+- Reduces timing risk
+
+Sector Rotation:
+- Shift between sectors based on economic cycle
+- Defensive in recession, cyclical in expansion
+- Requires market timing ability
+
+Asset Allocation:
+- Mix of stock, bond, and other ETFs
+- Rebalance periodically
+- Adjust based on age and risk tolerance
+
+Popular ETF Portfolios:
+
+Three-Fund Portfolio:
+- US Stocks (VTI): 60%
+- International Stocks (VXUS): 30%
+- Bonds (BND): 10%
+
+Lazy Portfolio:
+- Simple, diversified, low-cost
+- Rebalance annually
+- Set and forget approach
+
+Tax Considerations:
+- ETFs generally tax-efficient
+- In-kind creation/redemption minimizes gains
+- Qualified dividends taxed favorably
+- Consider tax-loss harvesting
+- Hold in appropriate account types
+
+Risks:
+- Market risk (value can decline)
+- Tracking error
+- Liquidity risk (smaller ETFs)
+- Closure risk (ETF may close)
+- Leveraged ETF decay
+- Currency risk (international ETFs)
+
+Choosing ETFs:
+1. Define investment goal
+2. Compare expense ratios
+3. Check AUM and volume
+4. Review tracking error
+5. Consider tax efficiency
+6. Evaluate issuer reputation (Vanguard, iShares, SPDR)

@@ -1,0 +1,106 @@
+NFT (Non-Fungible Token) Basics Guide
+
+What are NFTs?
+Non-Fungible Tokens (NFTs) are unique digital assets stored on a blockchain. Unlike cryptocurrencies (which are fungible - one Bitcoin equals another Bitcoin), each NFT is distinct and cannot be exchanged 1:1 with another NFT.
+
+Key Characteristics:
+- Uniqueness: Each NFT has unique identifying information
+- Ownership: Blockchain proves who owns the NFT
+- Transferability: Can be bought, sold, or transferred
+- Programmable: Smart contracts can add functionality
+- Interoperability: Can work across different platforms
+
+How NFTs Work:
+1. Creator mints (creates) NFT on blockchain
+2. NFT contains metadata (name, description, media link)
+3. Ownership recorded on blockchain ledger
+4. Can be listed for sale on marketplaces
+5. Smart contracts handle transfers and royalties
+
+NFT Use Cases:
+
+Digital Art:
+- Digital paintings, illustrations, generative art
+- Artists can sell directly to collectors
+- Royalties on secondary sales (typically 5-10%)
+- Examples: Beeple, Art Blocks, XCOPY
+
+Collectibles:
+- Profile pictures (PFPs): Bored Ape Yacht Club, CryptoPunks
+- Trading cards: NBA Top Shot, Sorare
+- Virtual items with community membership benefits
+
+Gaming:
+- In-game items (skins, weapons, characters)
+- Play-to-earn mechanics
+- Cross-game asset portability (potential)
+- Examples: Axie Infinity, Gods Unchained
+
+Music & Entertainment:
+- Music NFTs with royalty sharing
+- Concert tickets as NFTs
+- Exclusive content access
+- Examples: Sound.xyz, Royal
+
+Virtual Real Estate:
+- Land in metaverse platforms
+- Examples: Decentraland, The Sandbox, Otherside
+
+Domain Names:
+- Blockchain domains as NFTs
+- Examples: ENS (.eth), Unstoppable Domains
+
+Major NFT Marketplaces:
+
+Ethereum:
+- OpenSea: Largest NFT marketplace
+- Blur: Trader-focused, aggregator
+- Foundation: Curated art platform
+- SuperRare: High-end digital art
+
+Solana:
+- Magic Eden: Largest Solana marketplace
+- Tensor: Professional trading platform
+
+Bitcoin:
+- Ordinals: NFTs on Bitcoin (inscriptions)
+- Magic Eden (Bitcoin): Ordinals marketplace
+
+NFT Standards:
+- ERC-721: Original NFT standard on Ethereum
+- ERC-1155: Multi-token standard (fungible + non-fungible)
+- SPL: Solana NFT standard
+- BRC-20/Ordinals: Bitcoin NFT standard
+
+Minting NFTs:
+1. Choose blockchain (Ethereum, Solana, etc.)
+2. Create digital content
+3. Select marketplace or minting platform
+4. Upload content and set metadata
+5. Pay gas fees to mint
+6. List for sale (fixed price or auction)
+
+Risks and Considerations:
+- Market Volatility: NFT values can drop significantly
+- Liquidity Risk: May be hard to sell
+- Copyright Issues: Minting doesn't transfer IP rights
+- Scams: Fake collections, phishing, rug pulls
+- Environmental Concerns: Some blockchains use significant energy
+- Storage: Media often stored off-chain (IPFS, Arweave)
+
+Evaluating NFTs:
+- Creator reputation and track record
+- Community strength and engagement
+- Utility beyond speculation
+- Rarity and supply
+- Historical trading volume
+- Roadmap and future plans
+
+Tips for Beginners:
+1. Research before buying
+2. Start with small amounts
+3. Verify collection authenticity
+4. Use reputable marketplaces
+5. Secure your wallet
+6. Understand gas fees
+7. Don't invest more than you can afford to lose

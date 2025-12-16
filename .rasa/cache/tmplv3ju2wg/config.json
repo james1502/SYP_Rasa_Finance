@@ -1,0 +1,40 @@
+{
+  "priority": 6,
+  "vector_store": {
+    "type": "faiss",
+    "source": "./docs",
+    "threshold": 0.0,
+    "debug": true
+  },
+  "llm": {
+    "id": "ollama_llm",
+    "models": [
+      {
+        "provider": "ollama",
+        "model": "llama3.1:8b",
+        "api_base": "http://localhost:11434",
+        "temperature": 0.5,
+        "max_tokens": 800,
+        "api_key": "${OLLAMA_API_KEY}",
+        "request_timeout": 120
+      }
+    ]
+  },
+  "embeddings": {
+    "id": "ollama_embeddings",
+    "models": [
+      {
+        "provider": "huggingface_local",
+        "model": "BAAI/bge-small-en-v1.5",
+        "model_kwargs": {
+          "device": "cpu"
+        },
+        "encode_kwargs": {
+          "normalize_embeddings": true
+        }
+      }
+    ]
+  },
+  "top_k": 5,
+  "use_generative_llm": true
+}

@@ -1,0 +1,135 @@
+Stablecoins Guide
+
+What are Stablecoins?
+Stablecoins are cryptocurrencies designed to maintain a stable value, typically pegged to a fiat currency like the US dollar. They combine the benefits of cryptocurrency (fast transfers, programmability) with price stability.
+
+Why Stablecoins Matter:
+- Reduce volatility in crypto portfolios
+- Enable DeFi without price fluctuation risk
+- Facilitate trading between cryptocurrencies
+- Provide stable medium of exchange
+- Enable faster, cheaper cross-border payments
+
+Types of Stablecoins:
+
+1. Fiat-Collateralized:
+Backed 1:1 by fiat currency reserves
+
+USDT (Tether):
+- Largest stablecoin by market cap
+- Available on most blockchains
+- Controversial reserve transparency history
+- Most liquid stablecoin
+
+USDC (USD Coin):
+- Issued by Circle
+- Regular audits and attestations
+- Strong regulatory compliance
+- Popular in DeFi and institutions
+
+BUSD (Binance USD):
+- Issued by Paxos for Binance
+- Regulated by NYDFS
+- Being phased out due to regulatory pressure
+
+TUSD (TrueUSD):
+- Real-time attestation of reserves
+- Multi-bank reserve storage
+
+2. Crypto-Collateralized:
+Backed by cryptocurrency assets
+
+DAI:
+- Issued by MakerDAO
+- Over-collateralized by crypto (ETH, WBTC, etc.)
+- Decentralized governance
+- $1 peg maintained through smart contracts
+- Most popular decentralized stablecoin
+
+LUSD (Liquity USD):
+- Backed only by ETH
+- Fully decentralized
+- No governance token
+- Minimum collateral ratio: 110%
+
+3. Algorithmic Stablecoins:
+Maintain peg through algorithms and incentives
+
+FRAX:
+- Partially collateralized, partially algorithmic
+- Collateral ratio adjusts based on demand
+- Has survived where others failed
+
+Note: Pure algorithmic stablecoins (like Terra UST) have historically failed catastrophically. Most have been abandoned or redesigned.
+
+4. Commodity-Backed:
+Backed by physical assets
+
+PAXG (Pax Gold):
+- Each token = 1 troy ounce of gold
+- Redeemable for physical gold
+- Stored in London vaults
+
+XAUT (Tether Gold):
+- Also backed by physical gold
+- Issued by Tether
+
+How to Use Stablecoins:
+
+Trading:
+- Park funds between trades
+- Quote currency on exchanges
+- Reduce portfolio volatility
+
+DeFi:
+- Earn yield through lending (3-10% APY)
+- Provide liquidity in stablecoin pools
+- Borrow against crypto collateral
+
+Payments:
+- Send money globally
+- Pay for goods and services
+- Receive payments as freelancer
+
+Savings:
+- Earn higher yields than traditional banks
+- Maintain dollar exposure in crypto ecosystem
+
+Risks:
+
+De-pegging Risk:
+- Stablecoins can lose their $1 peg
+- Happened to UST (crashed to $0)
+- Even USDC briefly lost peg during SVB crisis
+
+Regulatory Risk:
+- Increasing government scrutiny
+- Potential restrictions or bans
+- Reserve requirements may change
+
+Counterparty Risk:
+- Trust in issuer to maintain reserves
+- Bank failures can affect backing
+- Smart contract risks for decentralized stablecoins
+
+Centralization Risk:
+- Fiat-backed stablecoins can freeze accounts
+- Issuers can blacklist addresses
+- Decentralized alternatives exist but have tradeoffs
+
+Choosing a Stablecoin:
+Consider:
+- Transparency of reserves
+- Regulatory compliance
+- Blockchain availability
+- DeFi integration
+- Liquidity and trading volume
+- Centralization vs decentralization preference
+
+Best Practices:
+1. Diversify across multiple stablecoins
+2. Understand the backing mechanism
+3. Monitor de-peg risks
+4. Use reputable platforms
+5. Consider decentralized options for censorship resistance
+6. Keep updated on regulatory developments

@@ -1,0 +1,183 @@
+version: "3.1"
+
+slots:
+  security_name:
+    type: text
+    mappings:
+      - type: from_llm
+
+  data_type:
+    type: text
+    mappings:
+      - type: from_llm
+
+  corrected_query:
+    type: text
+    mappings:
+      - type: controlled    
+
+  index_name:
+    type: text
+    mappings:
+      - type: from_llm
+
+  news_topic:
+    type: text
+    mappings:
+      - type: from_llm
+ 
+  comparison_items:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_llm
+
+  comparison_criteria:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_llm
+
+  comparison_output:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: controlled
+
+  market_data_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  index_info_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  news_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  analysis_company:
+    type: text
+    mappings:
+      - type: from_llm
+
+  analysis_output:
+    type: text
+    mappings:
+      - type: controlled
+
+actions:
+  - action_fetch_market_data
+  - action_fetch_index_info
+  - action_fetch_market_news
+  - action_fetch_comparison_data
+  - action_correct_typo
+  - validate_comparison_items
+  - action_fetch_analysis
+  #- action_route_clarified_query
+  #- action_trigger_search
+
+responses:
+  utter_greet:
+    - text: "Hello! Welcome to the Financial Market Assistant. I'm here to help you with market data, index information, and market news."
+      metadata:
+        rephrase: true
+
+  utter_ask_rephrase:
+    - text: "I'm sorry, I couldn't understand that. Could you please rephrase your question?"
+      metadata:
+        rephrase: true
+
+  utter_offer_help:
+    - text: "I can help you with:\n• Current stock prices and market data\n• Information about market indexes (S&P 500, NASDAQ, etc.)\n• Latest market news\n• Comparing securities or indexes\n\nWhat would you like to know?"
+      metadata:
+        rephrase: true
+
+  utter_ask_security_name:
+    - text: "Which stock or security would you like information about? Please provide the company name or ticker symbol."
+      metadata:
+        rephrase: true
+
+  utter_ask_data_type:
+    - text: "What specific data would you like? For example: current price, volume, 52-week high, 52-week low, or market cap."
+      metadata:
+        rephrase: true
+
+  utter_market_data_results:
+    - text: "Here's the market data for {security_name}:\n{market_data_output}"
+
+  utter_ask_index_name:
+    - text: "Which market index are you interested in? For example: S&P 500, NASDAQ, DJIA, or FTSE 100."
+      metadata:
+        rephrase: true
+
+  utter_index_info_results:
+    - text: "Here's the information for {index_name}:\n{index_info_output}"
+
+  utter_ask_news_topic:
+    - text: "What topic would you like news about? You can ask for general market news, news about a specific company, or news about a market sector."
+      metadata:
+        rephrase: true
+
+  utter_news_results:
+    - text: "Here are the latest news items about {news_topic}:\n{news_output}"
+
+  utter_ask_comparison_items:
+    - text: "What would you like to compare? Please specify the securities or indexes (you can list multiple items separated by commas)."
+      metadata:
+        rephrase: true
+
+  utter_ask_comparison_criteria:
+    - text: "What criteria should I use for the comparison? For example: performance over the last month, year-to-date returns, or volatility."
+      metadata:
+        rephrase: true
+
+  utter_comparison_results:
+    - text: "Here's the comparison:\n{comparison_output}"
+
+  utter_ask_followup:
+    - text: "Would you like to ask another question, get more details, or exit?"
+      metadata:
+        rephrase: true
+
+  utter_goodbye:
+    - text: "Thank you for using the Financial Market Assistant. Have a great day!"
+      metadata:
+        rephrase: true
+
+  utter_cannot_handle:
+    - text: "I'm sorry, I couldn't process that request. Could you rephrase or ask something else?"
+      metadata:
+        rephrase: true
+
+  utter_search_results:
+    - text: "{search_results}"
+      metadata:
+        rephrase: true
+
+  utter_no_relevant_answer_found:
+    - text: "I'm sorry, I can't help with that."
+      metadata:
+        rephrase: true
+
+  utter_can_do_something_else:
+    - text: "What else can I help you with?"
+      metadata:
+        rephrase: true
+
+  utter_analysis_results:
+    - text: "Here's the analysis for {analysis_company}:\n{analysis_output}"
+      metadata:
+        rephrase: true
+
+  utter_ask_analysis_company:
+    - text: "Which company would you like me to analyze? Please provide the company name or ticker symbol."
+      metadata:
+        rephrase: true
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

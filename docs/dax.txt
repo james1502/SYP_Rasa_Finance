@@ -1,0 +1,103 @@
+DAX Index (Germany) Guide
+
+What is the DAX?
+The DAX (Deutscher Aktienindex) is Germany's premier stock market index, tracking the 40 largest and most liquid companies listed on the Frankfurt Stock Exchange. It serves as the primary benchmark for the German economy and is one of Europe's most watched indices.
+
+Key Facts:
+- Founded: July 1, 1988
+- Base Value: 1,000 points (December 30, 1987)
+- Operator: Deutsche Börse
+- Constituents: 40 companies (expanded from 30 in 2021)
+- Calculation: Free-float market capitalization weighted
+
+Index Composition by Sector:
+- Industrials & Manufacturing
+- Automotive
+- Chemicals & Pharmaceuticals
+- Technology
+- Financial Services
+- Consumer Goods
+- Healthcare
+- Utilities
+
+Major DAX Constituents:
+- SAP (Software)
+- Siemens (Industrial conglomerate)
+- Allianz (Insurance)
+- Deutsche Telekom (Telecommunications)
+- BASF (Chemicals)
+- BMW (Automotive)
+- Mercedes-Benz (Automotive)
+- Volkswagen (Automotive)
+- Bayer (Pharmaceuticals)
+- Adidas (Consumer goods)
+- Deutsche Bank (Finance)
+- Infineon (Semiconductors)
+
+Trading Hours:
+- Xetra Trading: 9:00 AM - 5:30 PM (CET)
+- Floor Trading: 8:00 AM - 8:00 PM (CET)
+- Pre-market: 8:00 AM - 9:00 AM (CET)
+
+DAX Index Family:
+- DAX 40: Main index
+- MDAX: 50 mid-cap companies
+- SDAX: 70 small-cap companies
+- TecDAX: 30 technology companies
+- HDAX: Combined DAX + MDAX + TecDAX
+
+Performance Calculation:
+The DAX is typically quoted as a performance index, which:
+- Includes dividend reinvestment
+- Differs from most indices (price return only)
+- Better reflects total shareholder returns
+- DAX Kursindex shows price return only
+
+Factors Affecting the DAX:
+1. German economic data (GDP, manufacturing PMI)
+2. Eurozone monetary policy (ECB decisions)
+3. Global trade conditions (Germany is export-heavy)
+4. Euro exchange rates
+5. Energy prices (important for industry)
+6. China demand (major export market)
+7. Automotive sector performance
+
+Economic Significance:
+- Germany is Europe's largest economy
+- Export-oriented economy
+- Manufacturing powerhouse
+- DAX reflects global industrial demand
+
+Investment Options:
+- iShares Core DAX UCITS ETF
+- Xtrackers DAX UCITS ETF
+- DAX Futures (FDAX)
+- DAX Options
+- US-listed Germany ETFs (EWG)
+
+Advantages:
+- Exposure to European blue chips
+- Strong corporate governance standards
+- Diversified industrial exposure
+- Dividend reinvestment in index calculation
+- High liquidity
+
+Risks:
+- Eurozone economic uncertainty
+- Energy dependency issues
+- Strong Euro impact on exports
+- Automotive industry disruption (EV transition)
+- China exposure (trade tensions)
+
+Historical Milestones:
+- 1988: Index launched at 1,163 points
+- 2000: Tech bubble peak
+- 2008: Financial crisis drop
+- 2021: Expanded to 40 constituents
+- Record highs regularly in bull markets
+
+Comparison with Other European Indices:
+- CAC 40 (France): More luxury/consumer focus
+- FTSE 100 (UK): More commodities/finance
+- EURO STOXX 50: Pan-European blue chips
+- IBEX 35 (Spain): Banking-heavy

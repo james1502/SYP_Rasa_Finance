@@ -1,0 +1,21 @@
+S&P 500 Index
+
+The S&P 500 (Standard & Poor's 500) is a stock market index tracking the performance of 500 of the largest companies listed on U.S. stock exchanges. It's widely regarded as the best gauge of large-cap U.S. equities and one of the most commonly followed equity indices.
+
+Key Facts:
+- Created in 1957 by Standard & Poor's
+- Includes approximately 500 of the largest U.S. publicly traded companies
+- Market-cap weighted index, meaning larger companies have more influence
+- Covers about 80% of available market capitalization
+
+Top Sectors:
+Information Technology, Healthcare, Financials, Consumer Discretionary, Communication Services, Industrials, Consumer Staples, Energy, Utilities, Real Estate, and Materials.
+
+Major Companies:
+Apple, Microsoft, Amazon, NVIDIA, Alphabet (Google), Meta (Facebook), Berkshire Hathaway, Tesla, JPMorgan Chase, and Johnson & Johnson are typically among the largest holdings.
+
+Performance:
+Historically, the S&P 500 has returned an average of about 10% annually over the long term, though individual years vary significantly. It serves as a benchmark for portfolio performance.
+
+Investment:
+Investors can gain exposure through index funds and ETFs like SPY (SPDR S&P 500 ETF Trust), VOO (Vanguard S&P 500 ETF), and IVV (iShares Core S&P 500 ETF).

@@ -1,0 +1,267 @@
+version: "3.1"
+flows:
+
+# done (auto corrected user input)
+  pattern_cannot_handle:
+    description: Conversation repair flow for addressing failed command generation scenarios
+    name: pattern_cannot_handle
+    steps:
+      - noop: true
+        next:
+          # Fallback when no relevant answer found (EnterpriseSearchPolicy)
+          - if: context.reason is "cannot_handle_no_relevant_answer"
+            then:
+              - action: utter_no_relevant_answer_found
+                next: END
+          # Fallback for unsupported requests
+          - if: context.reason is "cannot_handle_not_supported"
+            then:
+              - action: utter_cannot_handle
+                next: END
+          # Default - ask user to rephrase
+          - else:
+              - action: utter_ask_rephrase
+                next: END
+
+#done (RAG )?? asked for what's more they wanted to have in RAG
+  search_flow:
+    description: >
+      Answer ONLY educational questions about investment concepts and definitions.
+      Use when user asks: "what is [concept]", "what are [concept]", "explain [concept]", "define [concept]".
+      Examples: "what is stock", "what are bonds", "explain ETFs", "define mutual funds".
+      Keywords: what, is, are, explain, define, tell me about, meaning of
+      
+      DO NOT use for:
+      - Market data queries (price, volume, data)
+      - News queries (news, headlines, articles)
+      - Specific company mentions with data requests
+    steps:
+      - action: action_correct_typo
+      - action: action_trigger_search
+
+#done   (market data queries
+  handle_market_data_query:
+    description: >
+      Get real-time stock data for a specific company or ticker.
+      Use ONLY when user mentions a company name or ticker symbol.
+      Examples: "Apple stock price", "AAPL price", "Tesla data".
+      Keywords: price, volume, data + company name or ticker
+      DO NOT use for general questions like "what is stock"
+
+      TRIGGER FOR:
+      - "[Company] stock price" - e.g., "Apple stock price", "Tesla stock price"
+      - "[Company] price" - e.g., "AAPL price", "show me AAPL price"
+      - "[Company] stock data" - e.g., "Tesla stock data", "Microsoft stock data"
+      - "[Company] volume" - e.g., "MSFT volume", "AAPL volume"
+      - "[Ticker] data/price/volume" - e.g., "TSLA data", "GOOGL price"
+      
+      Keywords: price, volume, stock data, current price, 52-week high/low, market cap
+      
+      MUST CONTAIN a specific company name OR ticker:
+      Companies: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix
+      Tickers: AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX
+      
+      DO NOT trigger for:
+      - News queries: "Tesla news", "Apple headlines"
+      - General questions: "what is stock", "explain Tesla"
+      - Comparison queries: "compare Tesla and Apple"
+    steps:
+      - action: action_correct_typo
+      - collect: security_name
+        description: >
+          Extract ONLY the company name or ticker symbol from the user's query.
+          Examples: 
+          - "Apple stock price" → extract "Apple"
+          - "AAPL price" → extract "AAPL"
+          - "Tesla data" → extract "Tesla"
+          - "show me Microsoft volume" → extract "Microsoft"
+          Remove words like: stock, price, data, volume, current, show, me
+      #- collect: data_type
+      #  description: the type of market data requested such as current price, volume, 52-week high, 52-week low, or market cap
+      - action: action_fetch_market_data
+      - action: utter_market_data_results
+
+#  done(index info queries
+  handle_index_info_query:
+    description: >
+      Get current value of a specific named index like S&P 500 or NASDAQ.
+      Use when user asks about market indexes.
+      Examples: "What's the S&P 500 at?", "NASDAQ value", "Dow Jones price"
+      Extract the index name WITHOUT special characters or backslashes.
+      Common indexes: S&P 500 (extract as "s&p 500"), NASDAQ, DJIA, Dow Jones, Russell 2000, FTSE 100
+      DO NOT trigger for:
+        - News queries: "Tesla news", "Apple headlines"
+        - General questions: "what is stock", "explain Tesla"
+        - Comparison queries: "compare Tesla and Apple"
+    steps:
+      - action: action_correct_typo
+      - collect: index_name
+        description: >
+          Extract the market index name from the user's query.
+          Examples:
+          - "What's the S&P 500 at?" → extract "S&P 500"
+          - "NASDAQ value" → extract "NASDAQ"
+          - "Dow Jones price" → extract "Dow Jones"
+          - "How is the Russell 2000 doing?" → extract "Russell 2000"
+          Common indexes: S&P 500, NASDAQ, DJIA, Dow Jones, Russell 2000, FTSE 100
+      - action: action_fetch_index_info
+      - action: utter_index_info_results
+
+#  done  (market new
+  handle_market_news_query:
+    description: >
+      Get breaking news, headlines, or articles about a specific company or market sector.
+      
+      TRIGGER FOR:
+      - "[Company] news" - e.g., "Tesla news", "Apple news"
+      - "[Company] headlines" - e.g., "Microsoft headlines"
+      - "news about [Company]" - e.g., "news about Amazon"
+      - "[Sector] news" - e.g., "tech news", "market news"
+      
+      Keywords: news, headlines, articles, breaking news, latest news
+      MUST contain: news, headlines, or articles keyword
+
+      DO NOT trigger for:
+      - Educational questions: "what is Tesla", "explain Apple"
+      - Price/data queries: "Tesla stock price", "Tesla volume"
+      - General questions without news keyword: "Tell me about bonds"
+    steps:
+      - action: action_correct_typo
+      - collect: news_topic
+        description: >
+          Extract the the specific topic, sector, or security the user wants news about, or general market news if not specified from the user's query.
+          Examples:
+          - "Tesla news?" → extract "Tesla"
+          - "tell me about Tesla news" → extract "Tesla"
+          - "News about Tesla" → extract "Tesla"
+      - action: action_fetch_market_news
+      - action: utter_news_results
+      - action: utter_ask_followup
+
+# done (comparison
+  handle_comparison_query:
+    description: >
+      Compare performance metrics between two or more securities.
+      
+      Extract TWO pieces of information:
+      1. comparison_items: comma-separated list of company names or tickers (e.g., "Apple, Tesla" or "AAPL, TSLA")
+      2. comparison_criteria: the metric to compare (e.g., "performance over last month", "year-to-date returns", "volatility")
+      
+      TRIGGER FOR:
+      - "compare [A] and [B]" - Extract "A, B" as comparison_items
+      - "[A] vs [B]" - Extract "A, B" as comparison_items
+      - "compare [A] and [B] [criteria]" - Extract both items and criteria
+      
+      Companies: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix
+      Tickers: AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX
+      EXAMPLES:
+      - User: "Compare Apple and Tesla" → comparison_items: "Apple, Tesla"
+      - User: "Compare Apple and Tesla performance" → comparison_items: "Apple, Tesla", comparison_criteria: "performance"
+    
+      DO NOT trigger for:
+      - Single company queries: "Tesla data", "Apple price"
+    steps:
+      - action: action_correct_typo
+      - id: collect_comparison_items
+        collect: comparison_items
+        description: >
+          Extract the company names or ticker symbols as a comma-separated list  from the user's query.
+          Examples: 
+          - "Apple, Tesla" or "AAPL, TSLA"
+          - "Compare Apple and Tesla performance last month" → extract "Apple, Tesla"
+          - "Difference between Microsoft and Google performance last month" → extract "Microsoft, Google"
+          - "AAPL vs TSLA" → extract "AAPL, TSLA"
+      - id: decide_next
+        noop: true
+        next:
+          - if: "slots.comparison_criteria is not null"
+            then: skip_criteria
+          - else: collect_criteria
+
+      - id: collect_criteria
+        collect: comparison_criteria
+        description: >
+          Extract the comparison metric or timeframe from the user's query.
+          Examples: 
+          - "performance over last month", "year-to-date returns", "volatility"
+          - "Compare Apple and Tesla performance last month" → extract "performance last month"
+          - "Difference between Microsoft and Google performance last month" → extract "performance last month"
+
+      - id: skip_criteria
+        action: action_fetch_comparison_data
+      
+      # ADD THIS STEP to display the results
+      - action: utter_comparison_results
+      - action: utter_ask_followup
+
+# (chart)
+
+# done(analysis
+  handle_analysis_query:
+    description: >
+      Provide detailed analysis of a company's financial performance, trends, and key metrics.
+      
+      TRIGGER FOR:
+      - "analyze [Company]" - e.g., "analyze Apple", "analyze Tesla"
+      - "[Company] analysis" - e.g., "Apple analysis", "Tesla analysis"
+      - "give me analysis of [Company]" - e.g., "give me analysis of Microsoft"
+      - "financial analysis [Company]" - e.g., "financial analysis Amazon"
+      
+      Keywords: analyze, analysis, financial analysis, performance analysis, trend analysis
+      
+      MUST CONTAIN a specific company name OR ticker:
+      Companies: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix
+      Tickers: AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX
+      
+      DO NOT trigger for:
+      - Price queries: "Apple stock price"
+      - News queries: "Apple news"
+      - Comparison queries: "compare Apple and Tesla"
+    steps:
+      - action: action_correct_typo
+      - collect: analysis_company
+        description: >
+          Extract ONLY the company name or ticker symbol from the user's query.
+          
+          IMPORTANT: Remove ALL these words before extracting:
+          - give, me, analysis, analyze, financial, performance, of, the, a, an
+          
+          Examples:
+          - "analyze Apple" → extract "Apple" (NOT "analyze Apple")
+          - "give me Apple analysis" → extract "Apple" (NOT "give me Apple")
+          - "AAPL analysis" → extract "AAPL" (NOT "AAPL analysis")
+          - "give me analysis of Tesla" → extract "Tesla" (NOT "give me analysis of Tesla")
+          - "financial analysis Microsoft" → extract "Microsoft" (NOT "financial analysis Microsoft")
+          
+          Valid company names: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix
+          Valid tickers: AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX
+          
+          Extract ONLY the company name or ticker, nothing else.
+      - action: action_fetch_analysis
+      - action: utter_analysis_results
+      - action: utter_ask_followup
+
+# done (greet user 
+  greet_user:
+    description: > 
+      Greet the user when they initiate conversation with a greeting.
+      Use when user says: hello, hi, hey, good morning, good afternoon, or any greeting.
+      This flow welcomes the user and explains what the assistant can help with.
+    steps:
+    #  - action: action_correct_typo
+      - action: utter_greet
+      - action: utter_offer_help
+
+# done (end
+  end_conversation:
+    description: ONLY use when user says goodbye, bye,byebye, exit, quit, thanks bye, or clearly wants to end the conversation
+    steps:
+      - action: action_correct_typo
+      - action: utter_goodbye
+
+# done (ask if there's anything need to do after completing use case
+  pattern_completed:
+    description: Flow that asks if the user needs more help after completing their initiated use cases
+    name: pattern completed
+    steps:
+      - action: utter_can_do_something_else
