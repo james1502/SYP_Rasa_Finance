@@ -81,7 +81,7 @@ flows:
       - action: action_fetch_market_data
       - action: utter_market_data_results
 
-#  done(index info queries
+#  done? (index info queries
   handle_index_info_query:
     description: >
       Get current value of a specific named index like S&P 500 or NASDAQ.
@@ -107,7 +107,7 @@ flows:
       - action: action_fetch_index_info
       - action: utter_index_info_results
 
-#  done  (market new
+#  done?  (market new
   handle_market_news_query:
     description: >
       Get breaking news, headlines, or articles about a specific company or market sector.
@@ -195,8 +195,33 @@ flows:
       - action: utter_ask_followup
 
 # (chart)
+  handle_chart_query:
+    description: >
+      Generate and display price charts for stocks, cryptocurrencies, or market indexes.
+      
+      TRIGGER FOR:
+      - "[Asset] chart" - e.g., "Bitcoin chart", "Apple chart", "S&P 500 chart"
+      - "show [Asset] chart" - e.g., "show Tesla chart"
+      - "chart for [Asset]" - e.g., "chart for Ethereum"
+      - "[Asset] price chart" - e.g., "AAPL price chart"
+      
+      Keywords: chart, graph, visualization, show chart, price chart
+      
+      Supports:
+      - Stocks: Apple, Tesla, Microsoft, Google, Amazon, etc.
+      - Crypto: Bitcoin, Ethereum, Dogecoin, Solana, etc.
+      - Indexes: S&P 500, NASDAQ, Dow Jones, FTSE 100
+      
+      DO NOT trigger for:
+      - Price queries without chart: "Apple stock price"
+      - News queries: "Bitcoin news"
+      - Analysis queries: "analyze Tesla"
+    steps:
+      - action: action_correct_typo
+      - action: action_show_chart
+      - action: utter_ask_followup
 
-# done(analysis
+# done? (analysis
   handle_analysis_query:
     description: >
       Provide detailed analysis of a company's financial performance, trends, and key metrics.

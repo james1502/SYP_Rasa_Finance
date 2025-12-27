@@ -8,6 +8,9 @@ from difflib import get_close_matches
 import re
 import requests
 import json
+import urllib.parse  
+import os  
+
 #pattern
 def _get_valid_terms_pattern() -> List[str]:
     """Shared valid terms for typo correction"""
@@ -913,7 +916,240 @@ class ActionFetchAnalysis(Action):
         """Format large numbers into billions/trillions"""
         if num is None or num == 0:
             return "N/A"
+
+class ActionShowChart(Action):
+    
+    def name(self) -> Text:
+        return "action_show_chart"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
+        # Get corrected query first
+        corrected_query = tracker.get_slot("corrected_query")
+        message = corrected_query if corrected_query else tracker.latest_message.get("text", "").lower()
+        
+        # Extract asset name from the message
+        asset_name = self._extract_asset_from_message(message)
+        
+        if not asset_name:
+            dispatcher.utter_message(text="📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'")
+            return []
+        
+        asset_lower = asset_name.lower()
+        
+        # Define mappings
+        crypto_map = {
+            "bitcoin": "bitcoin", "btc": "bitcoin",
+            "ethereum": "ethereum", "eth": "ethereum",
+            "dogecoin": "dogecoin", "doge": "dogecoin",
+            "solana": "solana", "sol": "solana",
+            "cardano": "cardano", "ada": "cardano",
+            "binancecoin": "binancecoin", "bnb": "binancecoin",
+            "ripple": "ripple", "xrp": "ripple",
+            "avalanche-2": "avalanche-2", "avax": "avalanche-2",
+            "chainlink": "chainlink", "link": "chainlink",
+            "matic-network": "matic-network", "matic": "matic-network",
+            "polygon": "matic-network",
+            "uniswap": "uniswap", "uni": "uniswap",
+            "cosmos": "cosmos", "atom": "cosmos",
+            "polkadot": "polkadot", "dot": "polkadot",
+            "litecoin": "litecoin", "ltc": "litecoin"
+        }
+        
+        index_map = {
+            "sp500": "SPY", "s&p 500": "SPY", "s&p": "SPY", "s and p 500": "SPY",
+            "nasdaq": "QQQ",
+            "dow": "DIA", "dow jones": "DIA",
+            "ftse100": "EWU", "ftse": "EWU",
+            "nikkei": "EWJ"
+        }
+        
+        # Check if it's a crypto
+        if asset_lower in crypto_map or asset_lower in crypto_map.values():
+            coin_id = crypto_map.get(asset_lower, asset_lower)
+            return self.show_crypto_chart(dispatcher, coin_id)
+        
+        # Check if it's an index
+        elif asset_lower in index_map:
+            symbol = index_map.get(asset_lower)
+            return self.show_index_chart(dispatcher, asset_lower, symbol)
+        
+        # Otherwise treat as stock ticker
+        else:
+            ticker_symbol = _clean_ticker(asset_name)
+            return self.show_stock_chart(dispatcher, ticker_symbol)
+    
+    def _extract_asset_from_message(self, message: str) -> str:
+        """Extract asset name from user message"""
+        # Remove noise words
+        noise_words = ['chart', 'show', 'me', 'the', 'a', 'an', 'for', 'of', 
+                      'price', 'graph', 'visualization', 'display']
+        
+        words = message.lower().split()
+        cleaned_words = [w for w in words if w not in noise_words]
+        
+        # Return the cleaned phrase
+        if cleaned_words:
+            return " ".join(cleaned_words)
+        
+        return None
+    
+    def generate_quickchart_url(self, labels: list, data: list, title: str, is_positive: bool) -> str:
+        """Generate QuickChart URL for visualization"""
+        color = "rgb(0, 211, 149)" if is_positive else "rgb(255, 107, 107)"
+        bg_color = "rgba(0, 211, 149, 0.2)" if is_positive else "rgba(255, 107, 107, 0.2)"
+        
+        chart_config = {
+            "type": "line",
+            "data": {
+                "labels": labels,
+                "datasets": [{
+                    "label": title,
+                    "data": data,
+                    "borderColor": color,
+                    "backgroundColor": bg_color,
+                    "fill": True,
+                    "lineTension": 0.4,
+                    "pointRadius": 0,
+                    "borderWidth": 2
+                }]
+            },
+            "options": {
+                "elements": {
+                    "line": {
+                        "tension": 0.4
+                    }
+                },
+                "plugins": {
+                    "legend": {"display": False},
+                    "title": {
+                        "display": True,
+                        "text": title,
+                        "color": "#ffffff",
+                        "font": {"size": 16}
+                    }
+                },
+                "scales": {
+                    "x": {
+                        "display": False
+                    },
+                    "y": {
+                        "ticks": {"color": "#aaaaaa"},
+                        "grid": {"color": "rgba(255,255,255,0.1)"}
+                    }
+                }
+            }
+        }
+        
+        chart_json = json.dumps(chart_config)
+        encoded = urllib.parse.quote(chart_json)
+        return f"https://quickchart.io/chart?c={encoded}&backgroundColor=%231a1a2e&width=500&height=300"
+    
+    def show_crypto_chart(self, dispatcher: CollectingDispatcher, coin_id: str) -> List[Dict[Text, Any]]:
+        """Generate chart for cryptocurrency"""
+        try:
+            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=7"
+            response = requests.get(url, timeout=15)
+            data = response.json()
+            
+            if "prices" not in data:
+                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {coin_id}.")
+                return []
+            
+            prices = data["prices"]
+            
+            # Sample data points
+            sampled = prices[::len(prices)//30] if len(prices) > 30 else prices
+            
+            labels = [datetime.fromtimestamp(p[0]/1000).strftime("%m/%d %H:%M") for p in sampled]
+            values = [round(p[1], 2) for p in sampled]
+            
+            current_price = prices[-1][1]
+            first_price = prices[0][1]
+            price_change = ((current_price - first_price) / first_price) * 100
+            is_positive = price_change >= 0
+            
+            chart_url = self.generate_quickchart_url(labels, values, f"{coin_id.title()} - 7 Day", is_positive)
+            
+            emoji = "📈" if is_positive else "📉"
+            dispatcher.utter_message(
+                text=f"{emoji} {coin_id.title()} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
+                image=chart_url
+            )
+            
+        except Exception as e:
+            print(f"Error generating crypto chart: {str(e)}")
+            dispatcher.utter_message(text=f"📊 Error generating chart for {coin_id}.")
+        
+        return []
+    
+    def show_stock_chart(self, dispatcher: CollectingDispatcher, ticker_symbol: str) -> List[Dict[Text, Any]]:
+        """Generate chart for stock using yfinance"""
+        try:
+            ticker = yf.Ticker(ticker_symbol)
+            hist = ticker.history(period="7d")
+            
+            if hist.empty:
+                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {ticker_symbol}.")
+                return []
+            
+            labels = [date.strftime("%m/%d") for date in hist.index]
+            values = [round(price, 2) for price in hist['Close'].values]
+            
+            current_price = values[-1]
+            first_price = values[0]
+            price_change = ((current_price - first_price) / first_price) * 100
+            is_positive = price_change >= 0
+            
+            chart_url = self.generate_quickchart_url(labels, values, f"{ticker_symbol} - 7 Day", is_positive)
+            
+            emoji = "📈" if is_positive else "📉"
+            dispatcher.utter_message(
+                text=f"{emoji} {ticker_symbol} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
+                image=chart_url
+            )
+            
+        except Exception as e:
+            print(f"Error generating stock chart: {str(e)}")
+            dispatcher.utter_message(text=f"📊 Error generating chart for {ticker_symbol}.")
+        
+        return []
+    
+    def show_index_chart(self, dispatcher: CollectingDispatcher, index_name: str, symbol: str) -> List[Dict[Text, Any]]:
+        """Generate chart for market index using yfinance (simpler than Alpha Vantage)"""
+        try:
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="7d")
+            
+            if hist.empty:
+                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {index_name}.")
+                return []
+            
+            labels = [date.strftime("%m/%d") for date in hist.index]
+            values = [round(price, 2) for price in hist['Close'].values]
+            
+            current_price = values[-1]
+            first_price = values[0]
+            price_change = ((current_price - first_price) / first_price) * 100
+            is_positive = price_change >= 0
+            
+            display_name = index_name.upper().replace("SP500", "S&P 500").replace("DOW", "Dow Jones")
+            chart_url = self.generate_quickchart_url(labels, values, f"{display_name} - 7 Day", is_positive)
+            
+            emoji = "📈" if is_positive else "📉"
+            dispatcher.utter_message(
+                text=f"{emoji} {display_name} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
+                image=chart_url
+            )
+            
+        except Exception as e:
+            print(f"Error generating index chart: {str(e)}")
+            dispatcher.utter_message(text=f"📊 Error generating chart for {index_name}.")
+        
+        return []
+
 def _clean_ticker(item: str) -> str:
     """Convert company name or crypto to ticker symbol"""
     company_to_ticker = {
