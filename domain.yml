@@ -68,7 +68,10 @@ slots:
     type: text
     mappings:
       - type: controlled
-
+  chart_asset:
+      type: text
+      mappings:
+        - type: from_llm
 actions:
   - action_fetch_market_data
   - action_fetch_index_info
@@ -77,6 +80,7 @@ actions:
   - action_correct_typo
   - validate_comparison_items
   - action_fetch_analysis
+  - action_show_chart
   #- action_route_clarified_query
   #- action_trigger_search
 
