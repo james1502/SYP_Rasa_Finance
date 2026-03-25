@@ -60,6 +60,11 @@ action_endpoint:
 #  llm:
 #    model_group: ollama_llm
 #  prompt_template: prompts/nlg-rephraser.jinja2
+#nlg:
+#  type: rephrase
+# rephrase_all: true
+# llm:
+#   model_group: ollama_llm 
 
 model_groups:
   - id: ollama_llm
@@ -69,8 +74,7 @@ model_groups:
         api_base: "http://localhost:11434"
         temperature: 0.5
         max_tokens: 800
-        api_key: ${OLLAMA_API_KEY}
-        request_timeout: 120  # Add timeout here
+        request_timeout: 120
   
   - id: ollama_embeddings
     models:
@@ -81,14 +85,14 @@ model_groups:
         encode_kwargs:
           normalize_embeddings: true
         
-#  - id: hf_emb
-#    models:
-##      - provider: huggingface
-#        model: sentence-transformers/all-MiniLM-L6-v2
-#        model_kwargs:
-#          device: "cpu"
-#        encode_kwargs:
-#          normalize_embeddings: true
+  - id: hf_emb
+    models:
+      - provider: huggingface_local
+        model: "sentence-transformers/all-MiniLM-L6-v2"
+        model_kwargs:
+          device: "cpu"
+        encode_kwargs:
+          normalize_embeddings: true
   #- id: hf_embeddings
   #  models:
   #    - provider: huggingface

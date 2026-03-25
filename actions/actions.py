@@ -5,13 +5,16 @@ from rasa_sdk.events import SlotSet, FollowupAction, UserUttered
 import yfinance as yf
 from datetime import datetime, timedelta
 from difflib import get_close_matches
+from .db_connection import mongo_db
 import re
 import requests
 import json
 import urllib.parse  
 import os  
+import logging
 
 #pattern
+
 def _get_valid_terms_pattern() -> List[str]:
     """Shared valid terms for typo correction"""
     return [
@@ -99,12 +102,15 @@ class ActionCorrectTypo(Action):
         # No correction needed - store original
         return [SlotSet("corrected_query", user_message)]    
 
+#yahoo market data
+"""
 class ActionFetchMarketData(Action):
     def name(self) -> Text:
         return "action_fetch_market_data"
     
     def _extract_company_from_query(self, query: str) -> str:
-        """Extract just the company name from a query like 'Apple stock price'"""
+        """#Extract just the company name from a query like 'Apple stock price'
+"""
         if not query:
             return None
         
@@ -175,6 +181,149 @@ class ActionFetchMarketData(Action):
             market_data = (
                 f"Unable to fetch data for {cleaned_ticker}. "
                 f"Error: {str(e)}\n"
+                f"Please verify the ticker symbol is correct. "
+                f"Common tickers: AAPL (Apple), TSLA (Tesla), MSFT (Microsoft)."
+            )
+        
+        return [
+            SlotSet("market_data_output", market_data),
+            SlotSet("security_name", cleaned_ticker)
+        ]
+"""
+
+#alpha market
+class ActionFetchMarketData(Action):
+    def name(self) -> Text:
+        return "action_fetch_market_data"
+    
+    def _extract_company_from_query(self, query: str) -> str:
+        """Extract just the company name from a query like 'Apple stock price'"""
+        if not query:
+            return None
+        
+        query_lower = query.lower()
+        
+        # Remove noise words
+        noise_words = ['stock', 'price', 'data', 'volume', 'current', 'show', 'me', 
+                      'get', 'fetch', 'what', 'is', 'the', 'of', 'for']
+        
+        words = query_lower.split()
+        cleaned_words = [w for w in words if w not in noise_words]
+        
+        # Return the first remaining word (likely the company name)
+        if cleaned_words:
+            return cleaned_words[0]
+        
+        return query.strip()
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        # Replace with your actual Alpha Vantage API key
+        API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+        
+        corrected_query = tracker.get_slot("corrected_query")
+        security_name = tracker.get_slot("security_name")
+        
+        # Use corrected query if available, otherwise use security_name
+        query_to_use = corrected_query if corrected_query else security_name
+        
+        # Extract just the company name from the full query
+        company_name = self._extract_company_from_query(query_to_use)
+        
+        # Convert company name to ticker symbol
+        cleaned_ticker = _clean_ticker(company_name)
+
+        if not cleaned_ticker or len(cleaned_ticker) < 2:
+            dispatcher.utter_message(
+                text=f"I couldn't identify a valid stock ticker from '{query_to_use}'. Please provide a ticker symbol like AAPL or a company name like Apple."
+            )
+            return [SlotSet("security_name", None)]
+        
+        try:
+            # Alpha Vantage API endpoints
+            quote_url = f"https://www.alphavantage.co/query"
+            
+            # Get real-time quote data
+            quote_params = {
+                "function": "GLOBAL_QUOTE",
+                "symbol": cleaned_ticker,
+                "apikey": API_KEY
+            }
+            
+            quote_response = requests.get(quote_url, params=quote_params, timeout=10)
+            quote_data = quote_response.json()
+            
+            # Check for errors
+            if "Error Message" in quote_data:
+                raise ValueError(f"Invalid ticker symbol: {cleaned_ticker}")
+            
+            if "Note" in quote_data:
+                raise ValueError("API rate limit reached. Please try again in a minute.")
+            
+            if "Global Quote" not in quote_data or not quote_data["Global Quote"]:
+                raise ValueError(f"No data available for {cleaned_ticker}")
+            
+            quote = quote_data["Global Quote"]
+            
+            # Extract data from Alpha Vantage response
+            current_price = float(quote.get("05. price", 0))
+            volume = int(quote.get("06. volume", 0))
+            high = float(quote.get("03. high", 0))
+            low = float(quote.get("04. low", 0))
+            
+            # Get 52-week high/low (requires TIME_SERIES_DAILY)
+            daily_url = f"https://www.alphavantage.co/query"
+            daily_params = {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": cleaned_ticker,
+                "apikey": API_KEY,
+                "outputsize": "full"  # Get full history for 52-week calculation
+            }
+            
+            daily_response = requests.get(daily_url, params=daily_params, timeout=10)
+            daily_data = daily_response.json()
+            
+            # Calculate 52-week high/low
+            high_52week = high
+            low_52week = low
+            
+            if "Time Series (Daily)" in daily_data:
+                time_series = daily_data["Time Series (Daily)"]
+                
+                # Get last 252 trading days (approximately 1 year)
+                recent_dates = sorted(time_series.keys(), reverse=True)[:252]
+                
+                highs = [float(time_series[date]["2. high"]) for date in recent_dates]
+                lows = [float(time_series[date]["3. low"]) for date in recent_dates]
+                
+                high_52week = max(highs) if highs else high
+                low_52week = min(lows) if lows else low
+            
+            market_data = (
+                f"Current Price: ${current_price:.2f}\n"
+                f"Volume: {volume:,}\n"
+                f"52-Week High: ${high_52week:.2f}\n"
+                f"52-Week Low: ${low_52week:.2f}"
+            )
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Network error fetching data for {cleaned_ticker}: {str(e)}")
+            market_data = (
+                f"Unable to fetch data for {cleaned_ticker} due to network issues. "
+                f"Please try again later."
+            )
+        except ValueError as e:
+            print(f"Error fetching data for {cleaned_ticker}: {str(e)}")
+            market_data = str(e)
+        except Exception as e:
+            print(f"Unexpected error fetching data for {cleaned_ticker}: {str(e)}")
+            market_data = (
+                f"Unable to fetch data for {cleaned_ticker}. "
                 f"Please verify the ticker symbol is correct. "
                 f"Common tickers: AAPL (Apple), TSLA (Tesla), MSFT (Microsoft)."
             )
@@ -400,8 +549,23 @@ class ActionFetchComparisonData(Action):
             comparison_output += "\n".join(comparison_results)
             
             # Add winner summary
+            # Add winner summary
             if len(comparison_results) == 2:
-                comparison_output += f"\n\n✨ **Winner:** {items[1] if '+16.24%' in comparison_results[1] else items[0]}"
+                # Extract percentage values from results
+                percentages = []
+                for result in comparison_results:
+                    # Extract the percentage value (e.g., "-5.48%" or "+16.24%")
+                    import re
+                    match = re.search(r'([+-]?\d+\.\d+)%', result)
+                    if match:
+                        percentages.append(float(match.group(1)))
+                    else:
+                        percentages.append(float('-inf'))
+                
+                # Determine winner (higher percentage is better)
+                winner_idx = 0 if percentages[0] > percentages[1] else 1
+                comparison_output += f"\n\n✨ **Winner:** {items[winner_idx]}"
+               
             
         except Exception as e:
             comparison_output = f"Unable to perform comparison."
@@ -1222,3 +1386,396 @@ def _clean_ticker(item: str) -> str:
     
     item_lower = item.strip().lower()
     return company_to_ticker.get(item_lower, item.strip().upper())
+
+##mid trrm
+
+logger = logging.getLogger(__name__)
+
+def _get_current_price(ticker: str) -> float:
+    """Get current price from Yahoo Finance"""
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1d")
+        if not hist.empty:
+            return float(hist['Close'].iloc[-1])
+        return 0.0
+    except Exception as e:
+        print(f"Error fetching price for {ticker}: {str(e)}")
+        return 0.0
+
+
+#data fixing
+def _parse_date(date_str: str) -> str:
+    """Parse various date formats to YYYY-MM-DD"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Handle "today"
+        if date_str.lower() == "today":
+            return datetime.now().strftime('%Y-%m-%d')
+        
+        # Handle "yesterday"
+        if date_str.lower() == "yesterday":
+            return (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        
+        # Try standard formats in order
+        date_formats = [
+            '%Y-%m-%d',      # 2026-02-14 (ISO format - try FIRST)
+            '%d-%m-%Y',      # 14-02-2026
+            '%d/%m/%Y',      # 14/02/2026
+            '%m/%d/%Y',      # 02/14/2026
+            '%Y/%m/%d',      # 2026/02/14
+        ]
+        
+        for fmt in date_formats:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                return dt.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+        
+        # If nothing worked, return as-is and let caller handle error
+        print(f"Warning: Could not parse date '{date_str}', returning as-is")
+        return date_str
+        
+    except Exception as e:
+        print(f"Error in _parse_date: {e}")
+        return date_str
+
+#get historic data
+def _get_historical_price(ticker: str, date: str) -> float:
+    """Get historical CLOSING price for a specific date"""
+    try:
+        import yfinance as yf
+        from datetime import datetime, timedelta
+        
+        target_date = datetime.strptime(date, "%Y-%m-%d")
+        today = datetime.now()
+        
+        if target_date.date() > today.date():
+            print(f"Error: Cannot fetch future price for {ticker} on {date}")
+            return 0.0
+        
+        stock = yf.Ticker(ticker)
+        
+        # Fetch 5 days before and after to handle weekends/holidays
+        start_date = target_date - timedelta(days=5)
+        end_date = target_date + timedelta(days=5)
+        
+        hist = stock.history(start=start_date, end=end_date, interval="1d")
+        
+        if hist.empty:
+            print(f"No data for {ticker} around {date}")
+            return 0.0
+        
+        # Find the closest date
+        hist.index = hist.index.tz_localize(None)  # Remove timezone
+        time_diffs = (hist.index - target_date).to_series().abs()
+        closest_idx = time_diffs.argmin()
+        closing_price = hist['Close'].iloc[closest_idx]
+        
+        return round(float(closing_price), 2)
+        
+    except Exception as e:
+        print(f"Error fetching historical price: {e}")
+        return 0.0
+
+
+#save transaction to mongo
+class ActionSaveTransaction(Action):
+    """Save transaction to MongoDB with historical price from transaction date"""
+    
+    def name(self) -> Text:
+        return "action_save_transaction"
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        try:
+            # Get slot values
+            transaction_type = tracker.get_slot("transaction_type")
+            transaction_shares = tracker.get_slot("transaction_shares")
+            transaction_asset = tracker.get_slot("transaction_asset")
+            transaction_date = tracker.get_slot("transaction_date")
+            
+            print(f"DEBUG: Slots received - type={transaction_type}, shares={transaction_shares}, asset={transaction_asset}, date={transaction_date}")
+            
+            # Validate
+            if not all([transaction_type, transaction_shares, transaction_asset, transaction_date]):
+                dispatcher.utter_message(text="❌ Missing required transaction information.")
+                return []
+            
+            # Convert to ticker
+            ticker = _clean_ticker(transaction_asset)
+            print(f"DEBUG: Cleaned ticker = {ticker}")
+            
+            # Parse date
+            parsed_date = _parse_date(transaction_date)
+            print(f"DEBUG: Parsed date = {parsed_date}")
+            
+            # Get historical price
+            print(f"DEBUG: Fetching historical price for {ticker} on {parsed_date}")
+            historical_price = _get_historical_price(ticker, parsed_date)
+            print(f"DEBUG: Historical price = {historical_price}")
+            
+            if historical_price == 0.0:
+                dispatcher.utter_message(
+                    text=f"❌ Could not fetch historical price for {ticker} on {parsed_date}. "
+                        f"Please verify the date and ticker symbol."
+                )
+                return [
+                    SlotSet("transaction_type", None),
+                    SlotSet("transaction_shares", None),
+                    SlotSet("transaction_asset", None),
+                    SlotSet("transaction_date", None)
+                ]
+            
+            # Calculate total value
+            total_value = float(transaction_shares) * historical_price
+            
+            # Create transaction data
+            transaction_data = {
+                "transaction_type": transaction_type.lower(),
+                "amount": float(transaction_shares),
+                "asset": ticker,
+                "date": parsed_date,
+                "price_at_transaction": historical_price
+            }
+            
+            # Save to MongoDB
+            print(f"DEBUG: Saving transaction to MongoDB")
+            transaction_id = mongo_db.save_transaction(transaction_data)
+            print(f"DEBUG: Transaction saved with ID = {transaction_id}")
+            
+            dispatcher.utter_message(
+                text=f"✅ **Transaction Recorded!**\n\n"
+                    f"Type: {transaction_type.upper()}\n"
+                    f"Asset: {ticker}\n"
+                    f"Shares: {transaction_shares}\n"
+                    f"Price on {parsed_date}: ${historical_price:.2f}\n"
+                    f"Date: {parsed_date}\n"
+                    f"Total Value: ${total_value:.2f}"
+            )
+            
+            return [
+                SlotSet("transaction_type", None),
+                SlotSet("transaction_shares", None),
+                SlotSet("transaction_asset", None),
+                SlotSet("transaction_date", None)
+            ]
+            
+        except Exception as e:
+            print(f"ERROR in ActionSaveTransaction: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            dispatcher.utter_message(text=f"❌ Error processing transaction: {str(e)}")
+            return []
+
+#get transaction
+class ActionGetTransactions(Action):
+    """Retrieve all transactions and calculate portfolio P&L"""
+    
+    def name(self) -> Text:
+        return "action_get_transactions"
+    
+    def _calculate_positions(self, transactions: List[Dict]) -> Dict:
+        """Calculate positions and P&L by asset"""
+        positions = {}
+        
+        for txn in transactions:
+            asset = txn['asset']
+            txn_type = txn['transaction_type']
+            amount = txn['amount']
+            price = txn.get('price_at_transaction', 0)
+            
+            if asset not in positions:
+                positions[asset] = {
+                    'shares': 0,
+                    'total_cost': 0,
+                    'transactions': []
+                }
+            
+            positions[asset]['transactions'].append(txn)
+            
+            if txn_type == 'buy':
+                positions[asset]['shares'] += amount
+                positions[asset]['total_cost'] += (amount * price)
+            elif txn_type == 'sell':
+                positions[asset]['shares'] -= amount
+                positions[asset]['total_cost'] -= (amount * price)
+        
+        # Calculate P&L with current prices
+        for asset, data in positions.items():
+            current_price = _get_current_price(asset)
+            current_value = data['shares'] * current_price
+            total_cost = data['total_cost']
+            pnl = current_value - total_cost
+            pnl_percent = (pnl / total_cost * 100) if total_cost != 0 else 0
+            
+            data['current_price'] = current_price
+            data['current_value'] = current_value
+            data['pnl'] = pnl
+            data['pnl_percent'] = pnl_percent
+            data['avg_cost'] = total_cost / data['shares'] if data['shares'] != 0 else 0
+        
+        return positions
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        # Get all transactions
+        transactions = mongo_db.get_all_transactions()
+        
+        if not transactions:
+            dispatcher.utter_message(
+                text="📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\n"
+                     "Start by recording a buy or sell transaction!"
+            )
+            return []
+        
+        # Calculate positions
+        positions = self._calculate_positions(transactions)
+        
+        # Build message
+        message = "📊 **Your Portfolio**\n\n"
+        
+        total_pnl = 0
+        total_value = 0
+        total_cost = 0
+        
+        for asset, data in sorted(positions.items()):
+            shares = data['shares']
+            
+            # Skip if position is closed
+            if shares == 0:
+                continue
+            
+            current_price = data['current_price']
+            current_value = data['current_value']
+            avg_cost = data['avg_cost']
+            pnl = data['pnl']
+            pnl_percent = data['pnl_percent']
+            
+            total_pnl += pnl
+            total_value += current_value
+            total_cost += data['total_cost']
+            
+            pnl_emoji = "📈" if pnl >= 0 else "📉"
+            
+            message += f"**{asset}**\n"
+            message += f"  Shares: {shares:.4f}\n"
+            message += f"  Avg Cost: ${avg_cost:.2f}\n"
+            message += f"  Current: ${current_price:.2f}\n"
+            message += f"  Value: ${current_value:.2f}\n"
+            message += f"  P&L: ${pnl:+.2f} ({pnl_percent:+.2f}%) {pnl_emoji}\n\n"
+        
+        # Summary
+        total_pnl_percent = (total_pnl / total_cost * 100) if total_cost != 0 else 0
+        summary_emoji = "📈" if total_pnl >= 0 else "📉"
+        
+        message += "━━━━━━━━━━━━━━━━━━━━\n"
+        message += f"**Portfolio Summary**\n"
+        message += f"Total Value: ${total_value:.2f}\n"
+        message += f"Total Cost: ${total_cost:.2f}\n"
+        message += f"Total P&L: ${total_pnl:+.2f} ({total_pnl_percent:+.2f}%) {summary_emoji}\n"
+        message += f"Transactions: {len(transactions)}"
+        
+        dispatcher.utter_message(text=message)
+        return []
+
+#
+class ActionGetTransactionsByAsset(Action):
+    """Get transactions and P&L for a specific asset"""
+    
+    def name(self) -> Text:
+        return "action_get_transactions_by_asset"
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        filter_asset = tracker.get_slot("filter_asset")
+        
+        if not filter_asset:
+            dispatcher.utter_message(text="Please specify which asset to filter by.")
+            return []
+        
+        # Convert to ticker
+        ticker = _clean_ticker(filter_asset)
+        
+        # Get transactions
+        transactions = mongo_db.get_transactions_by_asset(ticker)
+        
+        if not transactions:
+            dispatcher.utter_message(text=f"No transactions found for {ticker}.")
+            return [SlotSet("filter_asset", None)]
+        
+        # Calculate position
+        total_shares = 0
+        total_cost = 0
+        buy_count = 0
+        sell_count = 0
+        
+        for txn in transactions:
+            txn_type = txn['transaction_type']
+            amount = txn['amount']
+            price = txn.get('price_at_transaction', 0)
+            
+            if txn_type == 'buy':
+                total_shares += amount
+                total_cost += (amount * price)
+                buy_count += 1
+            elif txn_type == 'sell':
+                total_shares -= amount
+                total_cost -= (amount * price)
+                sell_count += 1
+        
+        # Get current price and calculate P&L
+        current_price = _get_current_price(ticker)
+        current_value = total_shares * current_price
+        pnl = current_value - total_cost
+        pnl_percent = (pnl / total_cost * 100) if total_cost != 0 else 0
+        avg_cost = total_cost / total_shares if total_shares != 0 else 0
+        
+        # Build message
+        message = f"📊 **{ticker} Transaction History**\n\n"
+        
+        # Transaction list
+        for txn in sorted(transactions, key=lambda x: x['date'], reverse=True):
+            txn_type = txn['transaction_type'].upper()
+            amount = txn['amount']
+            date = txn['date']
+            price = txn.get('price_at_transaction', 0)
+            value = amount * price
+            
+            emoji = "🟢" if txn_type == "BUY" else "🔴"
+            message += f"{emoji} {txn_type}: {amount:.4f} @ ${price:.2f} = ${value:.2f}\n"
+            message += f"   Date: {date}\n\n"
+        
+        # Position summary
+        message += "━━━━━━━━━━━━━━━━━━━━\n"
+        message += f"**Current Position**\n"
+        message += f"Shares: {total_shares:.4f}\n"
+        message += f"Avg Cost: ${avg_cost:.2f}\n"
+        message += f"Current Price: ${current_price:.2f}\n"
+        message += f"Current Value: ${current_value:.2f}\n"
+        
+        pnl_emoji = "📈" if pnl >= 0 else "📉"
+        message += f"P&L: ${pnl:+.2f} ({pnl_percent:+.2f}%) {pnl_emoji}\n\n"
+        message += f"Transactions: {buy_count} buys, {sell_count} sells"
+        
+        dispatcher.utter_message(text=message)
+        return [SlotSet("filter_asset", None)]
+
+

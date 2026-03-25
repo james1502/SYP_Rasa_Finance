@@ -28,19 +28,19 @@ slots:
  
   comparison_items:
     type: text
-    influence_conversation: false
+    
     mappings:
       - type: from_llm
 
   comparison_criteria:
     type: text
-    influence_conversation: false
+    
     mappings:
       - type: from_llm
 
   comparison_output:
     type: text
-    influence_conversation: false
+    
     mappings:
       - type: controlled
 
@@ -68,10 +68,47 @@ slots:
     type: text
     mappings:
       - type: controlled
+
   chart_asset:
       type: text
       mappings:
         - type: from_llm
+
+  #mid term
+  # Transaction recording slots
+  
+  transaction_type:
+    type: text
+    mappings:
+      - type: from_llm
+  
+  transaction_shares:
+    type: float
+    mappings:
+      - type: from_llm
+  
+  transaction_asset:
+    type: text
+    mappings:
+      - type: from_llm
+  
+  transaction_date:
+    type: text
+    mappings:
+      - type: from_llm
+  
+  transaction_id:
+    type: text
+    mappings:
+      - type: controlled
+  
+  # Transaction viewing slot
+  filter_asset:
+    type: text   
+    mappings:
+      - type: from_llm
+
+
 actions:
   - action_fetch_market_data
   - action_fetch_index_info
@@ -81,6 +118,10 @@ actions:
   - validate_comparison_items
   - action_fetch_analysis
   - action_show_chart
+  #mid
+  - action_save_transaction
+  - action_get_transactions
+  - action_get_transactions_by_asset
   #- action_route_clarified_query
   #- action_trigger_search
 
@@ -181,6 +222,37 @@ responses:
     - text: "Which company would you like me to analyze? Please provide the company name or ticker symbol."
       metadata:
         rephrase: true
+
+  utter_ask_chart_asset:
+    - text: "Which asset would you like to see a chart for? You can request charts for stocks, cryptocurrencies, or market indexes."
+      metadata:
+        rephrase: true
+
+  utter_ask_transaction_type:
+    - text: "What type of transaction would you like to record? (buy, sell, deposit, or withdrawal)"
+  
+  utter_ask_transaction_shares:
+    - text: "How many shares did you purchase?"
+      metadata:
+        rephrase: true
+
+  utter_ask_transaction_asset:
+    - text: "Which asset or security was involved in this transaction?"
+  
+  utter_ask_transaction_date:
+    - text: "When did this transaction occur? (You can say 'today', 'yesterday', or provide a specific date)"
+   
+  utter_ask_filter_asset:
+    - text: "Which asset would you like to see transactions for?"
+
+  utter_transaction_saved:
+    - text: "✅ Transaction successfully recorded! Your portfolio has been updated."
+
+  utter_invalid_amount:
+    - text: "❌ The transaction amount must be a positive number. Please try again."
+  
+  utter_portfolio_empty:
+    - text: "📊 You don't have any transactions recorded yet. Start by recording a buy or sell transaction!"
 
 session_config:
   session_expiration_time: 60

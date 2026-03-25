@@ -1,9 +1,11 @@
 recipe: default.v1
 language: en
+#Sadditional_languages:
+#  - zh-TW  #Traditional  Chinese
+#  - zh-CN  # Simplified Chinese
 
 pipeline:
   - name: SearchReadyLLMCommandGenerator
-  
     llm:
       model_group: ollama_llm
     #prompt_template: prompts/command-generator.jinja2
@@ -18,7 +20,7 @@ policies:
     llm:
       model_group: ollama_llm
     embeddings:
-      model_group: ollama_embeddings
+      model_group: hf_emb
     vector_store:
       type: "faiss"
       source: "./docs"

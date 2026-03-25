@@ -65,6 +65,9 @@ flows:
       - News queries: "Tesla news", "Apple headlines"
       - General questions: "what is stock", "explain Tesla"
       - Comparison queries: "compare Tesla and Apple"
+      
+      The security_name slot MUST be extracted from ANY query containing a company name or ticker.
+      DO NOT ask for security_name if it's already present in the user's message.
     steps:
       - action: action_correct_typo
       - collect: security_name
@@ -290,3 +293,159 @@ flows:
     name: pattern completed
     steps:
       - action: utter_can_do_something_else
+
+  #after mid
+
+  # Record transaction
+  record_transaction:
+    description: >
+      Record a financial transaction from the user.
+      
+      TRIGGER PATTERNS:
+      - "record transaction"
+      - "add transaction"
+      - "log transaction"
+      - "save transaction"
+      - "I made a transaction"
+      
+      This flow collects transaction details and stores them in the database.
+    name: "Record Transaction"
+
+    steps:
+      
+      - collect: transaction_type
+        description: >
+          The type of transaction: buy, sell, deposit, or withdrawal.
+          Examples: "buy", "sell", "deposit", "withdrawal"
+      
+      - collect: transaction_shares
+        description: >
+          The amount of the transaction in USD.
+          Must be a positive number.
+          Example: "500", "1000.50"
+        rejections:
+          - if: slots.transaction_shares <= 0
+            utter: utter_invalid_amount
+      
+      - collect: transaction_asset
+        description: >
+          The asset or security involved in the transaction.
+          Examples: "Apple", "AAPL", "Bitcoin", "S&P 500"
+      
+      - collect: transaction_date
+        description: >
+          The date of the transaction.
+          Format: YYYY-MM-DD or natural language like "today", "yesterday"
+      
+      - action: action_save_transaction
+      - action: utter_transaction_saved
+ 
+  
+  # View portfolio with P&L
+  view_portfolio:
+    description: >
+      View complete portfolio with positions and profit/loss calculations.
+      
+      TRIGGER PATTERNS:
+      - "show my portfolio"
+      - "view my positions"
+      - "show my P&L"
+      - "what's my profit and loss"
+      - "portfolio summary"
+
+    steps:
+      
+      - action: action_get_transactions
+
+  # Record buy transaction
+  record_buy:
+    description: >
+      Record a buy transaction for a stock or asset.
+      
+      TRIGGER PATTERNS:
+      - "I bought [number] shares of [asset]"
+      - "I bought [asset] for $[amount]"
+      - "record buy of [asset]"
+      
+      This flow records stock purchases with share quantity, asset name, and date.
+
+    steps:
+      
+      - set_slots:
+          - transaction_type: "buy"
+      
+      - collect: transaction_asset
+        description: >
+          The stock ticker or asset name.
+          Extract ONLY the company name or ticker from the user's message.
+          Examples: "Apple", "AAPL", "Tesla", "TSLA", "Microsoft", "MSFT"
+      
+      - collect: transaction_shares
+        description: >
+          The number of shares purchased.
+          Extract ONLY the numeric quantity.
+          Examples: "5", "10", "3.5"
+      
+      - collect: transaction_date
+        description: >
+          The purchase date.
+          Extract dates like "today", "yesterday", "2026-02-14", "14-02-2026"
+      
+      - action: action_save_transaction
+      - action: utter_transaction_saved
+
+
+  # Record sell transaction
+  record_sell:
+    description: >
+      Record a sell transaction for a stock or asset.
+      
+      TRIGGER PATTERNS:
+      - "I sold [asset]"
+      - "record sell"
+      - "add sell transaction"
+
+    steps:
+      
+      - set_slots:
+          - transaction_type: "sell"
+      - collect: transaction_shares
+        description: "Number of shares sold"
+      - collect: transaction_asset
+        description: "The stock ticker or asset name (e.g., AAPL, Tesla, Bitcoin)"
+      - collect: transaction_date
+        description: "Date of sale (e.g., today, 2024-01-15)"
+      - action: action_save_transaction
+      - action: utter_transaction_saved
+  
+  #check transaction
+  view_transactions:
+    description: >
+      View transaction history from the database.
+      
+      TRIGGER PATTERNS:
+      - "show my transactions"
+      - "view transaction history"
+      - "list my transactions"
+      - "show all transactions"
+
+    steps:
+      
+      - action: action_get_transactions
+
+  #check by asset
+  view_transactions_by_asset:
+    description: >
+      View transactions for a specific asset.
+      
+      TRIGGER PATTERNS:
+      - "show [asset] transactions"
+      - "transactions for [asset]"
+      - "view [asset] history"
+
+    steps:
+      
+      - collect: filter_asset
+        description: "The asset to filter transactions by(e.g., AAPL, Tesla, Bitcoin)"
+      - action: action_get_transactions_by_asset
+
