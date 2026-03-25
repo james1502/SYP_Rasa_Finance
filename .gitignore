@@ -1,0 +1,15 @@
+.env
+.env.local
+
+.rasa/
+models/
+
+__pycache__/
+*.py[cod]
+
+venv/
+
+.DS_Store
+Thumbs.db
+    
+credentials.yml

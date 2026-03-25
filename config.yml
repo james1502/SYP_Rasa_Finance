@@ -27,5 +27,5 @@ policies:
       debug: true
     top_k: 5
     use_generative_llm: true
-    #prompt_template: prompts/enterprise-search.jinja2
+    prompt_template: prompts/enterprise-search-policy-template.jinja2
 assistant_id: 20251127-124921-unsorted-bardolino

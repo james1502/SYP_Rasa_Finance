@@ -1339,8 +1339,8 @@ def _clean_ticker(item: str) -> str:
         'cisco': 'CSCO',
         
         # Cryptocurrencies (Yahoo Finance format)
-        'bitcoin': 'BTC-USD',
-        'btc': 'BTC-USD',
+        'bitcoin': 'BTC',
+        'btc': 'BTC',
         'ethereum': 'ETH-USD',
         'eth': 'ETH-USD',
         'binance coin': 'BNB-USD',

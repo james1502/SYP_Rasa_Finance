@@ -55,17 +55,12 @@
 action_endpoint:
   url: "http://localhost:5055/webhook"
 
-#nlg:
-#  type: rephrase
-#  llm:
-#    model_group: ollama_llm
-#  prompt_template: prompts/nlg-rephraser.jinja2
-#nlg:
-#  type: rephrase
-# rephrase_all: true
-# llm:
-#   model_group: ollama_llm 
-
+nlg:
+  type: rephrase
+  # rephrase_all: true
+  llm:
+    model_group: ollama_llm
+  prompt_template: prompts/response-rephraser-template.jinja2
 model_groups:
   - id: ollama_llm
     models:
