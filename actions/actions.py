@@ -205,7 +205,7 @@ class ActionFetchMarketData(Action):
         
         # Remove noise words
         noise_words = ['stock', 'price', 'data', 'volume', 'current', 'show', 'me', 
-                      'get', 'fetch', 'what', 'is', 'the', 'of', 'for']
+                      'get', 'fetch', 'what', 'is', 'the', 'of', 'for', '價格']
         
         words = query_lower.split()
         cleaned_words = [w for w in words if w not in noise_words]
@@ -228,9 +228,14 @@ class ActionFetchMarketData(Action):
         
         corrected_query = tracker.get_slot("corrected_query")
         security_name = tracker.get_slot("security_name")
+
+        print(corrected_query)
+        print(security_name)
         
         # Use corrected query if available, otherwise use security_name
-        query_to_use = corrected_query if corrected_query else security_name
+        # query_to_use = corrected_query if corrected_query else security_name
+        query_to_use = security_name.lower()
+
         
         # Extract just the company name from the full query
         company_name = self._extract_company_from_query(query_to_use)
@@ -1320,6 +1325,7 @@ def _clean_ticker(item: str) -> str:
         # Tech Companies
         'apple': 'AAPL',
         'tesla': 'TSLA',
+        '特斯拉': 'TSLA',
         'microsoft': 'MSFT',
         'google': 'GOOGL',
         'alphabet': 'GOOGL',
