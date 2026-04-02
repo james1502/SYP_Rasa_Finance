@@ -12,7 +12,7 @@ import json
 import urllib.parse  
 import os  
 import logging
-
+from langdetect import detect
 #pattern
 
 def _get_valid_terms_pattern() -> List[str]:
@@ -204,9 +204,8 @@ class ActionFetchMarketData(Action):
         query_lower = query.lower()
         
         # Remove noise words
-        noise_words = ['stock', 'price', 'data', 'volume', 'current', 'show', 'me', 
-                      'get', 'fetch', 'what', 'is', 'the', 'of', 'for']
-        
+        noise_words = _get_noise_words()
+
         words = query_lower.split()
         cleaned_words = [w for w in words if w not in noise_words]
         
@@ -229,14 +228,15 @@ class ActionFetchMarketData(Action):
         corrected_query = tracker.get_slot("corrected_query")
         security_name = tracker.get_slot("security_name")
         
-        # Use corrected query if available, otherwise use security_name
-        query_to_use = corrected_query if corrected_query else security_name
-        
+        print(corrected_query)
+        print(security_name)
+        query_to_use = security_name.lower()
+
         # Extract just the company name from the full query
         company_name = self._extract_company_from_query(query_to_use)
         
         # Convert company name to ticker symbol
-        cleaned_ticker = _clean_ticker(company_name)
+        cleaned_ticker =to_alpha_vantage_format(company_name)
 
         if not cleaned_ticker or len(cleaned_ticker) < 2:
             dispatcher.utter_message(
@@ -405,43 +405,6 @@ class ActionFetchIndexInfo(Action):
 class ActionFetchComparisonData(Action):
     def name(self) -> Text:
         return "action_fetch_comparison_data"
-
-    def _extract_companies_from_text(self, text: str) -> List[str]:
-        """
-        Extract company names from natural language.
-        Handles patterns like: 'compare Apple and Tesla', 'AAPL vs TSLA'
-        """
-        # Clean and lower the text
-        text_lower = text.lower().strip()
-        
-        # Common company name to ticker mapping (expanded for robustness)
-        company_to_ticker = {
-            'apple': 'AAPL', 'aapl': 'AAPL',
-            'tesla': 'TSLA', 'tsla': 'TSLA',
-            'microsoft': 'MSFT', 'msft': 'MSFT',
-            'google': 'GOOGL', 'googl': 'GOOGL', 'alphabet': 'GOOGL',
-            'amazon': 'AMZN', 'amzn': 'AMZN',
-            'meta': 'META', 'facebook': 'META',
-            'nvidia': 'NVDA', 'nvda': 'NVDA',
-            'netflix': 'NFLX', 'nflx': 'NFLX',
-        }
-        
-        found_tickers = []
-        words = re.findall(r'[a-zA-Z]{2,}', text_lower)  # Find all words of 2+ letters
-        
-        for word in words:
-            if word in company_to_ticker:
-                ticker = company_to_ticker[word]
-                if ticker not in found_tickers:
-                    found_tickers.append(ticker)
-            # Also check for direct uppercase ticker symbols in the original text
-            elif word.upper() in company_to_ticker.values():
-                ticker = word.upper()
-                if ticker not in found_tickers:
-                    found_tickers.append(ticker)
-        
-        # Return the first 2 unique tickers found (for comparison)
-        return found_tickers[:2]
 
     def _fetch_company_metrics(self, ticker_symbol: str) -> Dict:
         """Fetch key metrics for a single company using yfinance."""
@@ -650,33 +613,6 @@ class ActionFetchMarketNews(Action):
     def name(self) -> Text:
         return "action_fetch_market_news"
     
-    def _get_ticker_from_topic(self, topic: str) -> str:
-        """Convert company name or topic to ticker symbol"""
-        company_to_ticker = {
-            'apple': 'AAPL',
-            'tesla': 'TSLA',
-            'microsoft': 'MSFT',
-            'google': 'GOOGL',
-            'alphabet': 'GOOGL',
-            'amazon': 'AMZN',
-            'meta': 'META',
-            'facebook': 'META',
-            'nvidia': 'NVDA',
-            'netflix': 'NFLX',
-        }
-        
-        topic_lower = topic.lower().strip()
-        
-        # Check if it's a company name
-        if topic_lower in company_to_ticker:
-            return company_to_ticker[topic_lower]
-        
-        # If it's already a ticker (2-5 uppercase letters), return it
-        if topic.isupper() and 2 <= len(topic) <= 5:
-            return topic
-            
-        return None
-    
     def _fetch_news_from_massive_api(self, ticker: str = None) -> List[Dict]:
         """Fetch news from a financial API (Corrected Version)."""
         # 1. REPLACE with a valid API Key from Alpha Vantage (get free key at https://www.alphavantage.co/support/#api-key)
@@ -752,7 +688,7 @@ class ActionFetchMarketNews(Action):
             return [SlotSet("news_output", news_output)]
         
         # Convert topic to ticker if it's a company name
-        ticker = _clean_ticker(news_topic)
+        ticker = to_alpha_vantage_format(news_topic)
         
         # Fetch news from Massive API
         news_data = self._fetch_news_from_massive_api(ticker)
@@ -793,10 +729,7 @@ class ActionFetchAnalysis(Action):
         query_lower = query.lower()
         
         # Remove noise words
-        noise_words = ['give', 'me', 'analysis', 'analyze', 'financial', 
-                      'performance', 'of', 'the', 'a', 'an', 'show', 'get', 
-                      'fetch', 'what', 'is', 'for', 'about']
-        
+        noise_words = _get_noise_words()
         words = query_lower.split()
         cleaned_words = [w for w in words if w not in noise_words]
         
@@ -1148,9 +1081,7 @@ class ActionShowChart(Action):
     def _extract_asset_from_message(self, message: str) -> str:
         """Extract asset name from user message"""
         # Remove noise words
-        noise_words = ['chart', 'show', 'me', 'the', 'a', 'an', 'for', 'of', 
-                      'price', 'graph', 'visualization', 'display']
-        
+        noise_words = _get_noise_words()
         words = message.lower().split()
         cleaned_words = [w for w in words if w not in noise_words]
         
@@ -1314,79 +1245,306 @@ class ActionShowChart(Action):
         
         return []
 
+#yahoo (T&S cinese)
 def _clean_ticker(item: str) -> str:
-    """Convert company name or crypto to ticker symbol"""
+    """Convert company/crypto name (English, Traditional Chinese, Simplified Chinese) to Yahoo Finance ticker"""
     company_to_ticker = {
         # Tech Companies
         'apple': 'AAPL',
+        '苹果': 'AAPL',           
+        '蘋果': 'AAPL',          
         'tesla': 'TSLA',
+        '特斯拉': 'TSLA',        
         'microsoft': 'MSFT',
+        '微软': 'MSFT',           
+        '微軟': 'MSFT',          
         'google': 'GOOGL',
+        '谷歌': 'GOOGL',         
         'alphabet': 'GOOGL',
+        '字母表': 'GOOGL',        
+        '字母表': 'GOOGL',       
         'amazon': 'AMZN',
+        '亚马逊': 'AMZN',         
+        '亞馬遜': 'AMZN',        
+        'meta': 'META',
         'meta': 'META',
         'facebook': 'META',
+        '脸书': 'META',           
+        '臉書': 'META',          
         'nvidia': 'NVDA',
+        '英伟达': 'NVDA',         
+        '英偉達': 'NVDA',        
         'netflix': 'NFLX',
+        '奈飞': 'NFLX',           
+        '奈飛': 'NFLX',          
         
         # Additional Tech
         'amd': 'AMD',
+        '超威': 'AMD',           
         'intel': 'INTC',
+        '英特尔': 'INTC',         
+        '英特爾': 'INTC',        
         'oracle': 'ORCL',
+        '甲骨文': 'ORCL',        
         'salesforce': 'CRM',
+        '赛富时': 'CRM',          
+        '賽富時': 'CRM',         
         'adobe': 'ADBE',
+        '奥多比': 'ADBE',         
+        '奧多比': 'ADBE',        
+        'ibm': 'IBM',
         'ibm': 'IBM',
         'cisco': 'CSCO',
+        '思科': 'CSCO',          
         
-        # Cryptocurrencies (Yahoo Finance format)
+        # Cryptocurrencies
         'bitcoin': 'BTC-USD',
         'btc': 'BTC-USD',
+        '比特币': 'BTC-USD',      
+        '比特幣': 'BTC-USD',     
         'ethereum': 'ETH-USD',
         'eth': 'ETH-USD',
+        '以太坊': 'ETH-USD',      
+        '以太坊': 'ETH-USD',     
         'binance coin': 'BNB-USD',
         'bnb': 'BNB-USD',
+        '币安币': 'BNB-USD',      
+        '幣安幣': 'BNB-USD',     
         'cardano': 'ADA-USD',
         'ada': 'ADA-USD',
+        '卡尔达诺': 'ADA-USD',    
+        '卡爾達諾': 'ADA-USD',   
         'solana': 'SOL-USD',
         'sol': 'SOL-USD',
+        '索拉纳': 'SOL-USD',      
+        '索拉納': 'SOL-USD',     
         'ripple': 'XRP-USD',
         'xrp': 'XRP-USD',
+        '瑞波币': 'XRP-USD',      
+        '瑞波幣': 'XRP-USD',     
         'polkadot': 'DOT-USD',
         'dot': 'DOT-USD',
+        '波卡': 'DOT-USD',       
         'dogecoin': 'DOGE-USD',
         'doge': 'DOGE-USD',
+        '狗狗币': 'DOGE-USD',     
+        '狗狗幣': 'DOGE-USD',    
         'avalanche': 'AVAX-USD',
         'avax': 'AVAX-USD',
+        '雪崩': 'AVAX-USD',      
         'polygon': 'MATIC-USD',
         'matic': 'MATIC-USD',
+        '多边形': 'MATIC-USD',    
+        '多邊形': 'MATIC-USD',   
         'chainlink': 'LINK-USD',
         'link': 'LINK-USD',
+        '链环': 'LINK-USD',       
+        '鏈環': 'LINK-USD',      
         'litecoin': 'LTC-USD',
         'ltc': 'LTC-USD',
+        '莱特币': 'LTC-USD',      
+        '萊特幣': 'LTC-USD',     
         
         # Financial Services
         'jpmorgan': 'JPM',
+        '摩根大通': 'JPM',       
         'bank of america': 'BAC',
+        '美国银行': 'BAC',        
+        '美國銀行': 'BAC',       
         'wells fargo': 'WFC',
+        '富国银行': 'WFC',        
+        '富國銀行': 'WFC',       
         'goldman sachs': 'GS',
+        '高盛': 'GS',            
         'morgan stanley': 'MS',
+        '摩根士丹利': 'MS',      
+        'visa': 'V',
         'visa': 'V',
         'mastercard': 'MA',
+        '万事达': 'MA',           
+        '萬事達': 'MA',          
         'paypal': 'PYPL',
+        '贝宝': 'PYPL',           
+        '貝寶': 'PYPL',          
         
         # Other Major Companies
         'walmart': 'WMT',
+        '沃尔玛': 'WMT',          
+        '沃爾瑪': 'WMT',         
         'disney': 'DIS',
+        '迪士尼': 'DIS',         
         'coca cola': 'KO',
+        '可口可乐': 'KO',         
+        '可口可樂': 'KO',        
         'pepsi': 'PEP',
+        '百事': 'PEP',           
         'mcdonalds': 'MCD',
+        '麦当劳': 'MCD',          
+        '麥當勞': 'MCD',         
         'nike': 'NKE',
+        '耐克': 'NKE',           
         'starbucks': 'SBUX',
+        '星巴克': 'SBUX',        
     }
     
-    item_lower = item.strip().lower()
+    item_lower = item.strip().lower()  # .lower() affects only English letters
     return company_to_ticker.get(item_lower, item.strip().upper())
 
+def to_alpha_vantage_format(item: str) -> str:
+    """Convert Yahoo-style ticker to Alpha Vantage format."""
+    yahoo_ticker = _clean_ticker(item)  # from your function
+    if yahoo_ticker.endswith("-USD"):
+        # Remove "-USD" suffix -> e.g., BTC-USD -> BTC
+        return yahoo_ticker[:-4]
+    # Stocks remain the same
+    return yahoo_ticker
+
+# Shared noise words for entity extraction
+def _get_noise_words() -> List[str]:
+    # ──────────────────────────────────────────────────────────────
+    # ENGLISH
+    # ──────────────────────────────────────────────────────────────
+    english = [
+        # Basic question words
+        'what', 'is', 'are', 'was', 'were', 'how', 'when', 'where', 'why', 'which',
+        'who', 'whom', 'whose', 'does', 'do', 'did', 'has', 'have', 'had',
+        
+        # Verbs (action words)
+        'show', 'tell', 'give', 'get', 'fetch', 'retrieve', 'find', 'search',
+        'look', 'see', 'view', 'display', 'print', 'output', 'return',
+        'calculate', 'compute', 'determine', 'figure', 'analyze', 'analyse',
+        'explain', 'describe', 'define', 'clarify', 'elaborate', 'summarize',
+        'compare', 'contrast', 'differentiate', 'distinguish', 'evaluate',
+        'assess', 'review', 'check', 'verify', 'confirm', 'validate',
+        
+        # Prepositions / conjunctions
+        'the', 'a', 'an', 'of', 'for', 'to', 'in', 'on', 'at', 'by', 'with',
+        'without', 'about', 'regarding', 'concerning', 'per', 'via', 'through',
+        'and', 'or', 'but', 'so', 'because', 'as', 'like', 'versus', 'vs',
+        'between', 'among', 'within', 'outside', 'including', 'excluding',
+        
+        # Pronouns & determiners
+        'me', 'you', 'him', 'her', 'it', 'us', 'them', 'my', 'your', 'his',
+        'her', 'its', 'our', 'their', 'this', 'that', 'these', 'those',
+        'some', 'any', 'no', 'every', 'all', 'both', 'each', 'either', 'neither',
+        
+        # Financial / market terms (to be removed)
+        'stock', 'stocks', 'bond', 'bonds', 'etf', 'etfs', 'fund', 'funds',
+        'price', 'prices', 'quote', 'quotes', 'value', 'values', 'rate', 'rates',
+        'volume', 'volumes', 'market', 'markets', 'index', 'indices', 'benchmark',
+        'ticker', 'symbol', 'security', 'securities', 'asset', 'assets',
+        'portfolio', 'holdings', 'position', 'positions', 'trade', 'trades',
+        'transaction', 'transactions', 'buy', 'sell', 'purchase', 'sale',
+        'dividend', 'yield', 'return', 'returns', 'performance', 'growth',
+        'profit', 'loss', 'revenue', 'earnings', 'income', 'expense', 'cost',
+        
+        # Time / period words
+        'today', 'yesterday', 'tomorrow', 'now', 'current', 'latest', 'recent',
+        'past', 'last', 'next', 'upcoming', 'previous', 'following',
+        'day', 'week', 'month', 'year', 'quarter', 'decade', 'ytd', 'ytd',
+        'annual', 'yearly', 'monthly', 'weekly', 'daily', 'intraday',
+        'historical', 'history', 'past', 'future', 'forecast', 'prediction',
+        
+        # Data / reporting words
+        'data', 'information', 'info', 'details', 'specifics', 'figures',
+        'numbers', 'statistics', 'stats', 'metrics', 'indicators', 'measures',
+        'report', 'reports', 'reporting', 'update', 'updates', 'news',
+        'headlines', 'articles', 'analysis', 'analytics', 'insights',
+        'summary', 'overview', 'breakdown', 'details', 'full', 'complete',
+        
+        # Help / UI / conversational
+        'please', 'kindly', 'thanks', 'thank', 'sorry', 'hello', 'hi', 'hey',
+        'help', 'support', 'assist', 'guide', 'walk', 'through', 'step',
+        'howto', 'tutorial', 'example', 'sample', 'demo', 'try', 'test',
+    ]
+    
+    # ──────────────────────────────────────────────────────────────
+    # SIMPLIFIED CHINESE (简体中文)
+    # ──────────────────────────────────────────────────────────────
+    chinese_simplified = [
+        # Question words / pronouns
+        '什么', '什么是', '哪个', '哪些', '谁', '谁的', '怎样', '怎么', '如何',
+        '为什么', '何时', '何地', '哪里', '哪儿', '这', '这个', '这些', '那', '那个', '那些',
+        '我', '我们', '你', '你们', '他', '她', '它', '他们', '她们', '它们',
+        
+        # Verbs (action)
+        '显示', '展示', '呈现', '告诉', '说', '讲', '给', '给我', '获取', '得到',
+        '找', '寻找', '查看', '看', '看到', '输出', '返回', '计算', '算出',
+        '分析', '解析', '解释', '说明', '描述', '定义', '总结', '概括',
+        '比较', '对比', '对照', '评估', '评价', '审查', '检查', '确认', '验证',
+        
+        # Prepositions / connectors
+        '的', '了', '在', '于', '对', '对于', '关于', '有关', '与', '和', '跟',
+        '同', '及', '以及', '或', '或者', '但', '但是', '所以', '因为', '由于',
+        '像', '例如', '比如', '之间', '之中', '之内', '之外', '包括', '排除',
+        
+        # Financial / market terms (remove)
+        '股票', '证券', '债券', '基金', 'ETF', '价格', '报价', '价值', '数值',
+        '费率', '利率', '成交量', '交易量', '市场', '指数', '基准', '代码',
+        '符号', '资产', '组合', '持仓', '头寸', '交易', '买卖', '买入', '卖出',
+        '股息', '分红', '收益率', '回报', '表现', '增长', '利润', '亏损',
+        '收入', '收益', '成本', '费用',
+        
+        # Time / period
+        '今天', '昨天', '明天', '现在', '当前', '最新', '最近', '过去', '上',
+        '下', '接下来', '即将', '日', '天', '周', '月', '年', '季度', '年初至今',
+        '年度', '每月', '每周', '每日', '历史', '以往', '未来', '预测', '预估',
+        
+        # Data / reporting
+        '数据', '信息', '资料', '细节', '具体', '数字', '统计', '指标', '度量',
+        '报告', '报道', '更新', '新闻', '头条', '文章', '分析', '洞察',
+        '摘要', '概览', '概况', '完整', '全部',
+        
+        # Conversational / UI
+        '请', '请问', '谢谢', '感谢', '抱歉', '对不起', '你好', '嗨', '帮助',
+        '支持', '协助', '指导', '示例', '例子', '试试', '测试',
+    ]
+    
+    # ──────────────────────────────────────────────────────────────
+    # TRADITIONAL CHINESE (繁體中文)
+    # ──────────────────────────────────────────────────────────────
+    chinese_traditional = [
+        # Question words / pronouns
+        '什麼', '什麼是', '哪個', '哪些', '誰', '誰的', '怎樣', '怎麼', '如何',
+        '為什麼', '何時', '何地', '哪裡', '哪兒', '這', '這個', '這些', '那', '那個', '那些',
+        '我', '我們', '你', '你們', '他', '她', '它', '他們', '她們', '它們',
+        
+        # Verbs
+        '顯示', '展示', '呈現', '告訴', '說', '講', '給', '給我', '獲取', '得到',
+        '找', '尋找', '查看', '看', '看到', '輸出', '返回', '計算', '算出',
+        '分析', '解析', '解釋', '說明', '描述', '定義', '總結', '概括',
+        '比較', '對比', '對照', '評估', '評價', '審查', '檢查', '確認', '驗證',
+        
+        # Prepositions / connectors
+        '的', '了', '在', '於', '對', '對於', '關於', '有關', '與', '和', '跟',
+        '同', '及', '以及', '或', '或者', '但', '但是', '所以', '因為', '由於',
+        '像', '例如', '比如', '之間', '之中', '之內', '之外', '包括', '排除',
+        
+        # Financial / market
+        '股票', '證券', '債券', '基金', 'ETF', '價格', '報價', '價值', '數值',
+        '費率', '利率', '成交量', '交易量', '市場', '指數', '基準', '代碼',
+        '符號', '資產', '組合', '持倉', '頭寸', '交易', '買賣', '買入', '賣出',
+        '股息', '分紅', '收益率', '回報', '表現', '增長', '利潤', '虧損',
+        '收入', '收益', '成本', '費用',
+        
+        # Time / period
+        '今天', '昨天', '明天', '現在', '當前', '最新', '最近', '過去', '上',
+        '下', '接下來', '即將', '日', '天', '週', '月', '年', '季度', '年初至今',
+        '年度', '每月', '每週', '每日', '歷史', '以往', '未來', '預測', '預估',
+        
+        # Data / reporting
+        '數據', '資訊', '資料', '細節', '具體', '數字', '統計', '指標', '度量',
+        '報告', '報道', '更新', '新聞', '頭條', '文章', '分析', '洞察',
+        '摘要', '概覽', '概況', '完整', '全部',
+        
+        # Conversational / UI
+        '請', '請問', '謝謝', '感謝', '抱歉', '對不起', '你好', '嗨', '幫助',
+        '支持', '協助', '指導', '示例', '例子', '試試', '測試',
+    ]
+    
+    # Combine and remove duplicates (use set then list)
+    all_noise = set(english + chinese_simplified + chinese_traditional)
+    return list(all_noise)
 ##mid trrm
 
 logger = logging.getLogger(__name__)
@@ -1778,4 +1936,48 @@ class ActionGetTransactionsByAsset(Action):
         dispatcher.utter_message(text=message)
         return [SlotSet("filter_asset", None)]
 
+###len
+class ActionDetectLanguage(Action):
+    def name(self) -> Text:
+        return "action_detect_language"
+    
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text')
+        
+        try:
+            detected_language = detect(user_message)
+            # Map detected language codes to your supported languages
+            if detected_language == 'zh-cn' or detected_language == 'zh-tw':
+                language = 'zh'
+            elif detected_language == 'en':
+                language = 'en'
+            else:
+                language = 'en'  # Default fallback
+                
+            print(f"Detected language: {language}")
+            return [SlotSet("language", language)]
+        except:
+            return [SlotSet("language", "en")]
 
+
+class ActionSessionStart(Action):
+    def name(self) -> str:
+        return "action_session_start"
+    
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: dict) -> list:
+        user_message = tracker.latest_message.get('text', '')
+        
+        # Detect Chinese characters
+        has_chinese = any('\u4e00' <= char <= '\u9fff' for char in user_message)
+        
+        if has_chinese:
+            language = 'zh-TW'  # or 'zh-CN'
+        else:
+            language = 'en'
+            
+        print(f"DEBUG: Detected language: {language} for message: {user_message}")
+        
+        return [SlotSet("language", language)]
