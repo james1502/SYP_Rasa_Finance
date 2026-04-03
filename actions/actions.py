@@ -15,6 +15,7 @@ import logging
 from langdetect import detect
 #pattern
 
+#check
 def _get_valid_terms_pattern() -> List[str]:
     """Shared valid terms for typo correction"""
     return [
@@ -47,7 +48,7 @@ def _get_valid_terms_pattern() -> List[str]:
         'apple', 'tesla', 'microsoft', 'google', 'alphabet', 'amazon', 'meta', 'facebook', 'nvidia', 'netflix', 'amd', 'intel', 'oracle', 'salesforce', 'adobe', 'ibm', 'cisco', 'bitcoin', 'btc', 'ethereum', 'eth', 'binance coin', 'bnb', 'cardano', 'ada', 'solana', 'sol', 'ripple', 'xrp', 'polkadot', 'dot', 'dogecoin', 'doge', 'avalanche', 'avax', 'polygon', 'matic', 'chainlink', 'link', 'litecoin', 'ltc', 'jpmorgan', 'bank of america', 'wells fargo', 'goldman sachs', 'morgan stanley', 'visa', 'mastercard', 'paypal', 'walmart', 'disney', 'coca cola', 'pepsi', 'mcdonalds', 'nike', 'starbucks'
     ]
 
-#Corrects typos
+#Corrects typos #check
 class ActionCorrectTypo(Action):
     """Simple typo correction - just corrects and stores"""
     
@@ -102,7 +103,7 @@ class ActionCorrectTypo(Action):
         # No correction needed - store original
         return [SlotSet("corrected_query", user_message)]    
 
-#yahoo market data
+#yahoo market data #no need
 """
 class ActionFetchMarketData(Action):
     def name(self) -> Text:
@@ -333,6 +334,7 @@ class ActionFetchMarketData(Action):
             SlotSet("security_name", cleaned_ticker)
         ]
 
+#
 class ActionFetchIndexInfo(Action):
     def name(self) -> Text:
         return "action_fetch_index_info"
@@ -401,7 +403,7 @@ class ActionFetchIndexInfo(Action):
             index_info = f"Unable to fetch data for {index_name}. Please verify the index name is correct."
         
         return [SlotSet("index_info_output", index_info)]
-
+#
 class ActionFetchComparisonData(Action):
     def name(self) -> Text:
         return "action_fetch_comparison_data"
@@ -581,7 +583,8 @@ class ActionFetchComparisonData(Action):
             return f"{num/1e6:.2f}M"
         else:
             return f"{num:,.0f}"
-        
+ #       
+#
 class ActionValidateComparisonItems(Action):
     def name(self) -> Text:
         return "validate_comparison_items"
@@ -606,7 +609,7 @@ class ActionValidateComparisonItems(Action):
         
         # Validation succeeded
         return [SlotSet("comparison_items", comparison_items)]
-
+#
 class ActionFetchMarketNews(Action):
     """Fetch market news using Massive API"""
     
@@ -700,7 +703,7 @@ class ActionFetchMarketNews(Action):
             news_output = f"Unable to fetch news for {news_topic}. Please try again or specify a different company."
         
         return [SlotSet("news_output", news_output)]
-
+#
 class ActionRouteClarifiedQuery(Action):
 
     def name(self) -> Text:
@@ -714,7 +717,7 @@ class ActionRouteClarifiedQuery(Action):
     ) -> List[Dict[Text, Any]]:
         clarified_intent = tracker.get_slot("clarified_intent")
         return []
-
+#
 class ActionFetchAnalysis(Action):
     """Fetch comprehensive financial analysis for a company"""
     
@@ -1013,7 +1016,7 @@ class ActionFetchAnalysis(Action):
         """Format large numbers into billions/trillions"""
         if num is None or num == 0:
             return "N/A"
-
+#
 class ActionShowChart(Action):
     
     def name(self) -> Text:
@@ -1245,7 +1248,7 @@ class ActionShowChart(Action):
         
         return []
 
-#yahoo (T&S cinese)
+#yahoo (T&S cinese) #check
 def _clean_ticker(item: str) -> str:
     """Convert company/crypto name (English, Traditional Chinese, Simplified Chinese) to Yahoo Finance ticker"""
     company_to_ticker = {
@@ -1390,6 +1393,7 @@ def _clean_ticker(item: str) -> str:
     item_lower = item.strip().lower()  # .lower() affects only English letters
     return company_to_ticker.get(item_lower, item.strip().upper())
 
+#check
 def to_alpha_vantage_format(item: str) -> str:
     """Convert Yahoo-style ticker to Alpha Vantage format."""
     yahoo_ticker = _clean_ticker(item)  # from your function
@@ -1604,9 +1608,6 @@ def _parse_date(date_str: str) -> str:
 def _get_historical_price(ticker: str, date: str) -> float:
     """Get historical CLOSING price for a specific date"""
     try:
-        import yfinance as yf
-        from datetime import datetime, timedelta
-        
         target_date = datetime.strptime(date, "%Y-%m-%d")
         today = datetime.now()
         
@@ -1935,49 +1936,3 @@ class ActionGetTransactionsByAsset(Action):
         
         dispatcher.utter_message(text=message)
         return [SlotSet("filter_asset", None)]
-
-###len
-class ActionDetectLanguage(Action):
-    def name(self) -> Text:
-        return "action_detect_language"
-    
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        
-        user_message = tracker.latest_message.get('text')
-        
-        try:
-            detected_language = detect(user_message)
-            # Map detected language codes to your supported languages
-            if detected_language == 'zh-cn' or detected_language == 'zh-tw':
-                language = 'zh'
-            elif detected_language == 'en':
-                language = 'en'
-            else:
-                language = 'en'  # Default fallback
-                
-            print(f"Detected language: {language}")
-            return [SlotSet("language", language)]
-        except:
-            return [SlotSet("language", "en")]
-
-
-class ActionSessionStart(Action):
-    def name(self) -> str:
-        return "action_session_start"
-    
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: dict) -> list:
-        user_message = tracker.latest_message.get('text', '')
-        
-        # Detect Chinese characters
-        has_chinese = any('\u4e00' <= char <= '\u9fff' for char in user_message)
-        
-        if has_chinese:
-            language = 'zh-TW'  # or 'zh-CN'
-        else:
-            language = 'en'
-            
-        print(f"DEBUG: Detected language: {language} for message: {user_message}")
-        
-        return [SlotSet("language", language)]
