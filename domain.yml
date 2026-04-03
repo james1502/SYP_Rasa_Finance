@@ -109,6 +109,7 @@ slots:
       - type: from_llm
 
 
+
 actions:
   - action_fetch_market_data
   - action_fetch_index_info
@@ -153,6 +154,8 @@ responses:
 
   utter_market_data_results:
     - text: "Here's the market data for {security_name}:\n{market_data_output}"
+      metadata:
+        rephrase: true
 
   utter_ask_index_name:
     - text: "Which market index are you interested in? For example: S&P 500, NASDAQ, DJIA, or FTSE 100."
@@ -161,6 +164,8 @@ responses:
 
   utter_index_info_results:
     - text: "Here's the information for {index_name}:\n{index_info_output}"
+      metadata:
+        rephrase: true
 
   utter_ask_news_topic:
     - text: "What topic would you like news about? You can ask for general market news, news about a specific company, or news about a market sector."
@@ -169,6 +174,8 @@ responses:
 
   utter_news_results:
     - text: "Here are the latest news items about {news_topic}:\n{news_output}"
+      metadata:
+        rephrase: true
 
   utter_ask_comparison_items:
     - text: "What would you like to compare? Please specify the securities or indexes (you can list multiple items separated by commas)."
@@ -182,6 +189,8 @@ responses:
 
   utter_comparison_results:
     - text: "Here's the comparison:\n{comparison_output}"
+      metadata:
+        rephrase: true
 
   utter_ask_followup:
     - text: "Would you like to ask another question, get more details, or exit?"
@@ -230,6 +239,8 @@ responses:
 
   utter_ask_transaction_type:
     - text: "What type of transaction would you like to record? (buy, sell, deposit, or withdrawal)"
+      metadata:
+        rephrase: true
   
   utter_ask_transaction_shares:
     - text: "How many shares did you purchase?"
@@ -238,21 +249,35 @@ responses:
 
   utter_ask_transaction_asset:
     - text: "Which asset or security was involved in this transaction?"
-  
+      metadata:
+        rephrase: true
+
   utter_ask_transaction_date:
     - text: "When did this transaction occur? (You can say 'today', 'yesterday', or provide a specific date)"
-   
+      metadata:
+        rephrase: true
+
   utter_ask_filter_asset:
     - text: "Which asset would you like to see transactions for?"
+      metadata:
+        rephrase: true
+
 
   utter_transaction_saved:
     - text: "✅ Transaction successfully recorded! Your portfolio has been updated."
+      metadata:
+        rephrase: true
+
 
   utter_invalid_amount:
     - text: "❌ The transaction amount must be a positive number. Please try again."
-  
+      metadata:
+        rephrase: true  
+
   utter_portfolio_empty:
     - text: "📊 You don't have any transactions recorded yet. Start by recording a buy or sell transaction!"
+      metadata:
+        rephrase: true
 
 session_config:
   session_expiration_time: 60
