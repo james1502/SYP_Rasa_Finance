@@ -1,0 +1,215 @@
+Economic Indicators Guide
+
+What are Economic Indicators?
+Economic indicators are statistics that provide insights into the health and direction of an economy. They help investors, policymakers, and businesses make informed decisions about financial markets and economic trends.
+
+Types of Indicators:
+
+Leading Indicators:
+- Change BEFORE the economy changes direction
+- Help predict future economic activity
+- Examples: Stock market, building permits, consumer confidence
+
+Coincident Indicators:
+- Change AT THE SAME TIME as the economy
+- Confirm current economic state
+- Examples: GDP, employment, industrial production
+
+Lagging Indicators:
+- Change AFTER the economy has changed
+- Confirm trends that have occurred
+- Examples: Unemployment rate, CPI inflation, corporate profits
+
+Key Economic Indicators:
+
+Gross Domestic Product (GDP):
+- Total value of goods and services produced
+- Most comprehensive economic measure
+- Released quarterly
+- Components: Consumption, Investment, Government, Net Exports
+- Positive growth = Expanding economy
+- Negative growth (2 quarters) = Technical recession
+
+Employment Data:
+
+Non-Farm Payrolls (US):
+- Jobs added/lost in non-agricultural sectors
+- Released first Friday of each month
+- Major market-moving event
+- 150-200K healthy, >250K strong
+
+Unemployment Rate:
+- Percentage of labor force unemployed
+- Natural rate: ~4-5%
+- Low unemployment: Tight labor market
+- High unemployment: Economic weakness
+
+Jobless Claims:
+- Weekly initial unemployment claims
+- Leading indicator of labor market
+- Rising claims: Weakening economy
+- <300K generally healthy
+
+Inflation Indicators:
+
+Consumer Price Index (CPI):
+- Measures consumer price changes
+- Released monthly
+- Core CPI excludes food and energy
+- Fed targets 2% inflation
+- High inflation: Fed may raise rates
+- Low inflation: Fed may cut rates
+
+Producer Price Index (PPI):
+- Wholesale price changes
+- Leading indicator of CPI
+- Shows supply-side pressures
+
+Personal Consumption Expenditures (PCE):
+- Fed's preferred inflation measure
+- Broader than CPI
+- Released monthly
+
+Consumer Indicators:
+
+Consumer Confidence Index (CCI):
+- Conference Board survey
+- Measures consumer optimism
+- Leading indicator of spending
+- High confidence: Strong spending ahead
+
+Consumer Sentiment (UMich):
+- University of Michigan survey
+- Similar to CCI
+- Released twice monthly
+
+Retail Sales:
+- Monthly consumer spending data
+- Critical for US (70% of GDP is consumption)
+- Ex-autos and gas shows core trends
+
+Business Indicators:
+
+Purchasing Managers' Index (PMI):
+- Survey of business conditions
+- Manufacturing PMI and Services PMI
+- Above 50: Expansion
+- Below 50: Contraction
+- ISM (US), S&P Global (international)
+
+Industrial Production:
+- Factory, mining, utility output
+- Measures manufacturing health
+- Capacity utilization important
+
+Durable Goods Orders:
+- Big-ticket item orders
+- Leading indicator of business investment
+- Volatile month-to-month
+- Core (ex-transportation) more reliable
+
+Housing Indicators:
+
+Housing Starts:
+- New residential construction begun
+- Leading indicator
+- Sensitive to interest rates
+
+Building Permits:
+- Permits issued for new construction
+- Leading indicator of housing starts
+
+Existing Home Sales:
+- Sales of previously owned homes
+- Largest segment of housing market
+
+Home Price Indices:
+- Case-Shiller, FHFA indices
+- Track residential price changes
+- Lagging indicator
+
+Interest Rate Indicators:
+
+Federal Funds Rate:
+- Fed's target short-term rate
+- Primary monetary policy tool
+- Affects all borrowing costs
+- FOMC meetings: 8 per year
+
+Treasury Yields:
+- Government borrowing costs
+- 10-year yield: Benchmark for mortgages
+- Yield curve shape important
+
+Yield Curve:
+- Normal: Longer rates > shorter rates
+- Inverted: Shorter rates > longer rates
+- Inversion often precedes recession
+
+International Indicators:
+
+Trade Balance:
+- Exports minus imports
+- Deficit: Imports > Exports
+- Affects currency and GDP
+
+Current Account:
+- Broader than trade balance
+- Includes services, income, transfers
+
+Economic Calendar:
+
+Major Releases (US):
+- Employment Report: First Friday
+- CPI: Mid-month
+- GDP: End of month (quarterly)
+- FOMC: 8 times/year
+- PMI: Beginning of month
+- Retail Sales: Mid-month
+
+Using Economic Data:
+
+For Stocks:
+- Strong economy: Generally bullish
+- Too strong: Inflation concerns
+- Weak data: Recession fears
+- Context matters more than single data points
+
+For Bonds:
+- Strong data: Yields rise (prices fall)
+- Weak data: Yields fall (prices rise)
+- Inflation data especially important
+
+For Forex:
+- Strong data: Currency strengthens
+- Weak data: Currency weakens
+- Relative to expectations crucial
+
+For Crypto:
+- Risk-on/risk-off sentiment
+- Inflation hedge narrative
+- Liquidity conditions matter
+
+Trading Economic Data:
+
+Consensus vs Actual:
+- Markets price in expectations
+- Surprise vs consensus moves markets
+- Even good data can be "bad" if expected better
+
+Pre-Release Positioning:
+- Markets often move ahead of data
+- "Buy the rumor, sell the news"
+- Risk of wrong-sided positions
+
+Post-Release Trading:
+- Initial reaction may reverse
+- Wait for dust to settle
+- Look for confirmation
+
+Resources:
+- Bureau of Labor Statistics (BLS): jobs.bls.gov
+- Bureau of Economic Analysis (BEA): bea.gov
+- Federal Reserve: federalreserve.gov
+- Trading Economics: tradingeconomics.com
+- Economic calendars on broker platforms

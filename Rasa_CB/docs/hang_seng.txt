@@ -1,0 +1,86 @@
+Hang Seng Index (HSI) Guide
+
+What is the Hang Seng Index?
+The Hang Seng Index (HSI) is the primary stock market index for the Hong Kong Stock Exchange (HKEX). Launched in 1969, it tracks the performance of the largest and most liquid companies listed in Hong Kong.
+
+Key Facts:
+- Founded: November 24, 1969
+- Operator: Hang Seng Indexes Company Limited
+- Base Value: 100 points (July 31, 1964)
+- Number of Constituents: Approximately 80 companies
+- Calculation: Free-float market capitalization weighted
+
+Index Composition:
+The HSI includes companies across various sectors:
+- Finance: Major banks and insurance companies
+- Utilities: Power and gas companies
+- Properties: Real estate developers
+- Commerce & Industry: Diverse industrial companies
+
+Major Constituents Include:
+- HSBC Holdings
+- Tencent Holdings
+- AIA Group
+- Alibaba Group
+- China Construction Bank
+- Meituan
+- JD.com
+- Xiaomi Corporation
+
+Hang Seng Index Family:
+- Hang Seng China Enterprises Index (HSCEI): H-shares of mainland Chinese companies
+- Hang Seng TECH Index: 30 largest tech companies
+- Hang Seng Composite Index: Broader market coverage
+- Hang Seng Corporate Sustainability Index
+
+Trading Hours:
+- Morning Session: 9:30 AM - 12:00 PM (HKT)
+- Afternoon Session: 1:00 PM - 4:00 PM (HKT)
+- Pre-opening: 9:00 AM - 9:30 AM (HKT)
+
+Market Characteristics:
+- Gateway to Chinese economy
+- Mix of Hong Kong and mainland Chinese companies
+- Important for Asian market sentiment
+- Heavily influenced by China policy decisions
+
+Factors Affecting the HSI:
+1. China's economic data and policies
+2. US-China relations
+3. Hong Kong regulatory environment
+4. Global market sentiment
+5. Currency movements (HKD/USD peg)
+6. Tech sector performance
+7. Property market conditions
+
+Historical Performance:
+- All-time high: ~33,000 (2018)
+- Major corrections during global crises
+- Sensitive to geopolitical events
+- Volatility during Hong Kong political events
+
+Investment Options:
+- Tracker Fund of Hong Kong (2800.HK): Oldest and largest HSI ETF
+- Hang Seng Index ETF (2833.HK)
+- HSI Futures and Options
+- International ETFs tracking HSI
+
+Advantages of HSI:
+- Exposure to Chinese growth via Hong Kong
+- Diverse sector representation
+- High liquidity
+- Well-regulated market
+- Tax advantages for some investors
+
+Risks:
+- China policy risk
+- Currency risk (though HKD pegged to USD)
+- Geopolitical tensions
+- Regulatory changes
+- Concentration in certain sectors
+
+Comparison with Other Asian Indices:
+- Nikkei 225 (Japan): More domestically focused
+- Shanghai Composite: Mainland China, restricted access
+- KOSPI (Korea): Tech-heavy, semiconductor focused
+- Straits Times Index (Singapore): Smaller, finance-heavy

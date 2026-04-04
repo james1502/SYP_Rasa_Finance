@@ -1,0 +1,100 @@
+Ethereum (ETH) - The World Computer
+
+Overview:
+Ethereum is a decentralized, open-source blockchain platform that enables developers to build and deploy smart contracts and decentralized applications (dApps). Launched in July 2015 by Vitalik Buterin and a team of co-founders, Ethereum expanded upon Bitcoin's blockchain technology by introducing programmable functionality.
+
+While Bitcoin focuses primarily on being a digital currency, Ethereum is a platform that allows developers to create their own applications using blockchain technology. Ether (ETH) is the native cryptocurrency of the Ethereum network.
+
+Smart Contracts:
+Smart contracts are self-executing contracts with the terms of the agreement directly written into code. They automatically execute when predetermined conditions are met, without the need for intermediaries. This technology enables trustless transactions and agreements.
+
+For example, a smart contract could automatically transfer ownership of a digital asset when payment is received, without requiring a third party to verify or facilitate the transaction.
+
+Ethereum Virtual Machine (EVM):
+The EVM is the runtime environment for smart contracts on Ethereum. It's a decentralized computer that executes code exactly as programmed, making it possible to run applications without any possibility of downtime, censorship, fraud, or third-party interference.
+
+The Merge - Transition to Proof-of-Stake:
+In September 2022, Ethereum completed "The Merge," transitioning from a Proof-of-Work (PoW) consensus mechanism to Proof-of-Stake (PoS). This historic upgrade had several major benefits:
+
+1. Energy Efficiency: Reduced Ethereum's energy consumption by approximately 99.95%
+2. Security: Made the network more secure and decentralized
+3. Scalability Foundation: Set the stage for future scalability improvements
+4. Economic Changes: Changed how new ETH is created and distributed
+
+Under Proof-of-Stake, validators (rather than miners) secure the network by staking their ETH. Validators are randomly selected to create new blocks and earn rewards in ETH.
+
+Decentralized Finance (DeFi):
+Ethereum is the backbone of the DeFi movement, which aims to recreate traditional financial systems (lending, borrowing, trading) without intermediaries. Key DeFi applications include:
+
+1. Decentralized Exchanges (DEXs): Like Uniswap, allow trading without central authority
+2. Lending Protocols: Like Aave and Compound, enable peer-to-peer lending
+3. Stablecoins: Like DAI, provide price-stable cryptocurrencies
+4. Yield Farming: Allows users to earn returns on their crypto holdings
+
+As of 2025, over $80 billion worth of value is locked in Ethereum DeFi protocols.
+
+Non-Fungible Tokens (NFTs):
+Ethereum pioneered the NFT market through standards like ERC-721 and ERC-1155. NFTs are unique digital assets that represent ownership of items like digital art, collectibles, virtual real estate, and more. The NFT market exploded in 2021 and continues to grow, with Ethereum hosting the majority of NFT transactions.
+
+Decentralized Autonomous Organizations (DAOs):
+DAOs are organizations governed by smart contracts rather than traditional management structures. Members vote on decisions using tokens, and the smart contracts automatically execute approved proposals. Ethereum hosts thousands of DAOs managing billions of dollars in assets.
+
+Scalability Solutions:
+Ethereum faces scalability challenges, with the base layer processing only about 15-30 transactions per second. Several solutions are being developed:
+
+1. Layer 2 Solutions: Like Optimism, Arbitrum, and zkSync, process transactions off the main chain
+2. Sharding: Planned upgrade to split the network into multiple chains working in parallel
+3. Rollups: Bundle multiple transactions into one, reducing costs and increasing speed
+
+Market Information (2025):
+Ether price: Approximately $4,500 as of November 2025
+Market capitalization: Over $500 billion
+Total Value Locked in DeFi: $80+ billion
+Daily active addresses: Over 500,000
+
+Ethereum 2.0 and Future Upgrades:
+The Ethereum roadmap includes several planned upgrades:
+
+1. Danksharding: Will dramatically increase transaction throughput
+2. Account Abstraction: Will improve user experience and security
+3. PBS (Proposer-Builder Separation): Will further decentralize the network
+4. Verkle Trees: Will reduce node storage requirements
+
+Programming Languages:
+Ethereum smart contracts are primarily written in Solidity, a programming language designed specifically for Ethereum. Other languages include Vyper and Yul. This allows developers worldwide to build applications on Ethereum.
+
+Use Cases:
+1. Financial Services: Lending, borrowing, insurance, derivatives
+2. Gaming: Play-to-earn games, virtual worlds, in-game asset ownership
+3. Supply Chain: Tracking goods, verifying authenticity
+4. Identity: Decentralized identity management
+5. Social Media: Censorship-resistant social platforms
+6. Content Creation: Direct creator-to-consumer platforms
+
+Comparison with Bitcoin:
+- Bitcoin: Digital gold, store of value, simple transactions
+- Ethereum: Programmable platform, smart contracts, diverse applications
+- Both: Decentralized, blockchain-based, cryptographically secured
+
+Staking:
+To stake on Ethereum, users must deposit 32 ETH to become a validator. Validators earn rewards for securing the network, typically 4-7% annual percentage rate (APR). For users with less than 32 ETH, liquid staking services allow participation with smaller amounts.
+
+The Ethereum Ecosystem:
+Thousands of projects have been built on Ethereum, including:
+- Stablecoins: USDC, USDT, DAI
+- DeFi Protocols: Uniswap, Aave, MakerDAO
+- NFT Marketplaces: OpenSea, Blur
+- Layer 2 Solutions: Polygon, Optimism, Arbitrum
+- Gaming: Axie Infinity, Decentraland
+
+Community and Development:
+Ethereum has one of the largest and most active developer communities in crypto. The Ethereum Foundation and thousands of independent developers continuously work on improving the protocol and building new applications.
+
+Challenges:
+- High gas fees during network congestion (though Layer 2s help)
+- Complexity for new users
+- Competition from other smart contract platforms
+- Regulatory uncertainty
+
+Future Vision:
+Vitalik Buterin and the Ethereum community envision Ethereum becoming the "world computer" - a global, decentralized platform that hosts applications serving billions of users while remaining secure, scalable, and decentralized.

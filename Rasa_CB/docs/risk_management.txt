@@ -1,0 +1,166 @@
+Risk Management in Trading and Investing
+
+What is Risk Management?
+Risk management is the process of identifying, analyzing, and controlling potential losses in trading and investing. Proper risk management is crucial for long-term success and capital preservation.
+
+Core Principles:
+1. Protect capital first, profits second
+2. Never risk more than you can afford to lose
+3. Plan your trade, trade your plan
+4. Cut losses quickly, let winners run
+
+Position Sizing:
+
+Percentage Risk Model:
+- Risk only 1-2% of capital per trade
+- Example: $100,000 account = max $1,000-2,000 risk per trade
+- Allows for losing streaks without account destruction
+- Professional traders often risk 0.5-1%
+
+Fixed Dollar Amount:
+- Risk same dollar amount per trade
+- Simple but doesn't scale with account size
+- Good for beginners with small accounts
+
+Kelly Criterion:
+- Mathematical formula for optimal bet size
+- Kelly % = Win Rate - (Loss Rate / Win-Loss Ratio)
+- Often use "half Kelly" for safety
+- Aggressive approach, use cautiously
+
+Volatility-Based Sizing:
+- Adjust position size based on asset volatility
+- Higher volatility = smaller position
+- ATR (Average True Range) commonly used
+- Normalizes risk across different assets
+
+Stop-Loss Strategies:
+
+Fixed Percentage Stop:
+- Exit if price drops X% from entry
+- Common: 5-10% for stocks, 2-5% for crypto
+- Simple and systematic
+
+Support/Resistance Stop:
+- Place stop below support (longs) or above resistance (shorts)
+- Technical basis for stop placement
+- May be wider but more logical
+
+ATR-Based Stop:
+- Stop at 2-3x ATR from entry
+- Accounts for normal volatility
+- Less likely to be stopped out by noise
+
+Trailing Stop:
+- Follows price as it moves favorably
+- Locks in profits while allowing upside
+- Can be fixed % or ATR-based
+
+Mental Stop:
+- Not recommended - psychology makes execution difficult
+- Always use hard stops
+
+Take-Profit Strategies:
+
+Fixed Risk-Reward Ratio:
+- Target 2:1, 3:1 reward to risk
+- If risking $100, target $200-300 profit
+- Ensures profitable expectancy even with 50% win rate
+
+Technical Targets:
+- Next resistance/support level
+- Fibonacci extensions
+- Previous highs/lows
+
+Scaling Out:
+- Sell portions at different levels
+- Example: 1/3 at 1R, 1/3 at 2R, 1/3 trailing
+- Balances profit-taking with letting winners run
+
+Diversification:
+
+Asset Class Diversification:
+- Stocks, bonds, commodities, crypto
+- Different classes perform differently in various conditions
+- Reduces overall portfolio volatility
+
+Sector Diversification:
+- Spread across industries
+- Avoids concentration in one area
+- Consider correlations between sectors
+
+Geographic Diversification:
+- Domestic and international exposure
+- Reduces country-specific risk
+- Currency exposure consideration
+
+Time Diversification:
+- Dollar-cost averaging
+- Don't invest all at once
+- Reduces timing risk
+
+Correlation Considerations:
+- Assets can become correlated in crises
+- True diversification requires uncorrelated assets
+- Regularly review correlation matrices
+
+Risk Metrics:
+
+Maximum Drawdown:
+- Largest peak-to-trough decline
+- Important for evaluating strategies
+- Aim for drawdowns you can psychologically handle
+
+Sharpe Ratio:
+- Risk-adjusted return measure
+- (Return - Risk Free Rate) / Standard Deviation
+- Higher is better; > 1 is good, > 2 is very good
+
+Sortino Ratio:
+- Like Sharpe but only considers downside volatility
+- Better for asymmetric return profiles
+
+Value at Risk (VaR):
+- Maximum expected loss at confidence level
+- Example: 95% VaR of $10,000 means 5% chance of losing more
+- Used by institutions
+
+Psychological Risk Management:
+
+Trading Plan:
+- Define entry/exit rules before trading
+- Stick to the plan during market hours
+- Review and adjust only after hours
+
+Trading Journal:
+- Record every trade with reasoning
+- Review mistakes and successes
+- Identify patterns in behavior
+
+Emotional Control:
+- Don't trade when emotional
+- Take breaks after big wins or losses
+- Avoid revenge trading
+
+Position Limits:
+- Maximum positions at one time
+- Maximum exposure to single asset
+- Daily/weekly loss limits
+
+Common Risk Management Mistakes:
+1. No stop-loss ("hoping" it comes back)
+2. Moving stops to avoid being stopped out
+3. Overleveraging
+4. Averaging down on losers
+5. Risking too much per trade
+6. Ignoring correlation risk
+7. Not having a trading plan
+
+Professional Practices:
+1. Always know your maximum loss before entering
+2. Size positions based on stop distance
+3. Use stop-losses religiously
+4. Review risk exposure daily
+5. Stress test portfolio for various scenarios
+6. Have circuit breakers for losing streaks
+7. Maintain cash reserves for opportunities

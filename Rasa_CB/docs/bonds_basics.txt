@@ -1,0 +1,186 @@
+Bonds and Fixed Income Guide
+
+What are Bonds?
+Bonds are debt securities where an investor lends money to an entity (government or corporation) for a defined period at a fixed or variable interest rate. They're considered safer than stocks and provide regular income.
+
+Key Bond Terms:
+
+Face Value (Par):
+- Amount paid at maturity
+- Typically $1,000 per bond
+- Price quoted as percentage of par
+
+Coupon Rate:
+- Annual interest rate paid
+- Based on face value
+- Example: 5% coupon = $50/year per $1,000 bond
+
+Maturity Date:
+- When principal is repaid
+- Short-term: < 3 years
+- Medium-term: 3-10 years
+- Long-term: > 10 years
+
+Yield to Maturity (YTM):
+- Total return if held to maturity
+- Accounts for price, coupon, and time
+- Most important yield measure
+
+Current Yield:
+- Annual coupon / Current price
+- Simpler but less complete measure
+
+Types of Bonds:
+
+Government Bonds:
+Treasury Securities (US):
+- T-Bills: < 1 year, no coupon
+- T-Notes: 2-10 years
+- T-Bonds: 20-30 years
+- TIPS: Inflation-protected
+- I-Bonds: Inflation-linked savings bonds
+
+Other Government:
+- Municipal Bonds: State/local government, often tax-free
+- Agency Bonds: Government-sponsored enterprises
+- Foreign Government: Sovereign bonds
+
+Corporate Bonds:
+- Investment Grade: BBB/Baa and above
+- High Yield (Junk): Below BBB/Baa
+- Convertible: Can convert to stock
+- Callable: Issuer can redeem early
+
+Other Fixed Income:
+- Mortgage-Backed Securities (MBS)
+- Asset-Backed Securities (ABS)
+- Certificates of Deposit (CDs)
+- Money Market Instruments
+
+Bond Pricing:
+
+Price and Yield Relationship:
+- Inverse relationship
+- When interest rates rise, bond prices fall
+- When interest rates fall, bond prices rise
+- Longer maturity = more price sensitivity
+
+Premium vs Discount:
+- Premium: Price > Face value (coupon > market rate)
+- Par: Price = Face value
+- Discount: Price < Face value (coupon < market rate)
+
+Duration:
+- Measure of interest rate sensitivity
+- Higher duration = more volatile
+- Longer maturity and lower coupon = higher duration
+- Used to estimate price change for yield change
+
+Credit Ratings:
+
+Rating Agencies:
+- Moody's: Aaa, Aa, A, Baa, Ba, B, Caa, Ca, C
+- S&P/Fitch: AAA, AA, A, BBB, BB, B, CCC, CC, C, D
+
+Investment Grade:
+- Moody's: Baa3 and above
+- S&P: BBB- and above
+- Lower default risk
+- Lower yields
+
+High Yield (Junk):
+- Below investment grade
+- Higher default risk
+- Higher yields to compensate
+- More stock-like behavior
+
+Yield Curve:
+
+What is the Yield Curve?
+- Graph of yields across maturities
+- Shows term structure of interest rates
+
+Shapes:
+- Normal: Upward sloping (longer = higher yield)
+- Inverted: Downward sloping (recession indicator)
+- Flat: Similar yields across maturities
+
+Key Spreads:
+- 10-Year minus 2-Year Treasury spread
+- Inversion historically precedes recessions
+- Credit spreads indicate risk appetite
+
+Bond Risks:
+
+Interest Rate Risk:
+- Prices fall when rates rise
+- Managed through duration matching
+
+Credit Risk:
+- Issuer may default
+- Managed through diversification and ratings
+
+Inflation Risk:
+- Fixed payments lose purchasing power
+- TIPS provide inflation protection
+
+Reinvestment Risk:
+- Coupons reinvested at lower rates
+- More significant in falling rate environment
+
+Liquidity Risk:
+- Some bonds difficult to sell
+- Corporate bonds less liquid than Treasuries
+
+Call Risk:
+- Issuer redeems when rates fall
+- Limits upside potential
+
+Bond Investment Strategies:
+
+Laddering:
+- Buy bonds maturing at different times
+- Reduces reinvestment risk
+- Provides regular liquidity
+
+Barbell:
+- Short-term and long-term bonds
+- Avoids intermediate maturities
+- Balances yield and flexibility
+
+Bullet:
+- Bonds maturing around same date
+- Used for specific future liability
+
+Total Return:
+- Active management for capital gains
+- Trade based on interest rate views
+- Higher risk than buy-and-hold
+
+Bond ETFs and Funds:
+
+Advantages:
+- Diversification
+- Professional management
+- Liquidity
+- Low minimum investment
+
+Popular Bond ETFs:
+- BND: Total US Bond Market
+- TLT: 20+ Year Treasury
+- LQD: Investment Grade Corporate
+- HYG: High Yield Corporate
+- TIP: TIPS
+
+Considerations:
+- No maturity date (perpetual)
+- Daily price fluctuation
+- Expense ratios reduce yield
+- May not perform like individual bonds
+
+Why Include Bonds?
+- Reduce portfolio volatility
+- Generate income
+- Capital preservation
+- Diversification from stocks
+- Rebalancing opportunities

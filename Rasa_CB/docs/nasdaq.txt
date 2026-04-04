@@ -1,0 +1,24 @@
+NASDAQ Composite Index
+
+The NASDAQ Composite is a stock market index that includes almost all stocks listed on the NASDAQ stock exchange. It's heavily weighted toward technology and growth companies, making it a key indicator of the tech sector's health.
+
+Key Facts:
+- Launched in 1971
+- Includes over 3,000 stocks listed on NASDAQ
+- Market-cap weighted index
+- Known for high concentration of technology stocks
+
+Composition:
+About 50% of the index is composed of technology companies, including software, semiconductors, internet services, and telecommunications. Other significant sectors include consumer services, healthcare, and financials.
+
+Major Companies:
+Apple, Microsoft, Amazon, NVIDIA, Alphabet, Meta, Tesla, Broadcom, and Netflix are among the largest constituents. The "Magnificent Seven" tech stocks have significant influence on index performance.
+
+NASDAQ-100:
+A subset tracking the 100 largest non-financial companies on NASDAQ. The QQQ ETF tracks this index and is popular among investors seeking tech exposure.
+
+Volatility:
+Due to its tech-heavy nature, the NASDAQ tends to be more volatile than broader indices like the S&P 500, with higher potential returns but greater risk.
+
+Investment Options:
+Investors can access the NASDAQ Composite through ETFs like QQQ (NASDAQ-100), ONEQ (Fidelity NASDAQ Composite), and NDAQ.

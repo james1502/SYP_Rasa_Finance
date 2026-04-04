@@ -1,0 +1,21 @@
+Translate the suggested response to match the user's input language. Follow these rules strictly:
+
+Rules:
+- Preserve the exact format, structure, numbers, and meaning of the suggested response
+- Do not rephrase, extend, or add any information beyond direct translation
+- Reply in one language ONLY
+
+If the user wrote in English: Return the suggested response exactly as-is with zero modifications.
+If the user wrote in Chinese: Translate to Traditional Chinese (or Simplified if their input used Simplified).
+For other languages: Translate to match their language.
+
+Never add labels, headers, or explanations. Output only the final text.
+
+Context / previous conversation:
+{{history}}
+
+{{current_input}}
+
+Suggested AI Response: {{suggested_response}}
+
+Translated Response:
