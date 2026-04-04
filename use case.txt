@@ -1,0 +1,280 @@
+
+
+### 1. Greeting Flows
+
+**English:**
+- hi
+- hello
+- good morning
+- hey there
+
+**Simplified Chinese:**
+- 你好
+- 早上好
+- 嗨
+- 您好
+
+**Traditional Chinese:**
+- 你好
+- 早上好
+- 嗨
+- 您好
+
+---
+
+### 2. Market Data Queries
+
+**English:**
+- Apple stock price
+- What's the AAPL price?
+- show me Tesla stock data
+- MSFT volume
+- Google current price
+- tell me the price of Amazon
+
+**Simplified Chinese:**
+- 苹果股票价格
+- AAPL的价格是多少?
+- 给我看特斯拉的股票数据
+- 微软的交易量
+- 谷歌当前价格
+- 告诉我亚马逊的价格
+
+**Traditional Chinese:**
+- 蘋果股票價格
+- AAPL的價格是多少?
+- 給我看特斯拉的股票數據
+- 微軟的交易量
+- 谷歌當前價格
+- 告訴我亞馬遜的價格
+
+---
+
+### 3. Index Information
+
+**English:**
+- What's the S&P 500 at?
+- NASDAQ value
+- How is the Dow Jones doing?
+- show me Russell 2000 price
+- FTSE 100
+
+**Simplified Chinese:**
+- S&P 500 现在是多少?
+
+
+**Traditional Chinese:**
+- S&P 500 現在是多少?
+
+
+---
+
+### 4. Market News
+
+**English:**
+- Tesla news
+- Apple headlines
+- news about Microsoft
+- tech sector news
+- show me Amazon news
+- latest news on NVDA
+
+**Simplified Chinese:**
+- 特斯拉新闻
+- 苹果头条
+- 关于微软的新闻
+- 科技板块新闻
+- 给我看亚马逊的新闻
+- 英伟达的最新新闻
+
+**Traditional Chinese:**
+- 特斯拉新聞
+- 蘋果頭條
+- 關於微軟的新聞
+- 科技板塊新聞
+- 給我看亞馬遜的新聞
+- 輝達的最新新聞
+
+---
+
+### 5. Comparison Queries
+
+**English:**
+- compare Apple and Tesla
+- AAPL vs TSLA
+- difference between Microsoft and Google
+- compare Amazon and Meta performance
+
+**Simplified Chinese:**
+- 比较苹果和特斯拉
+- AAPL对比TSLA
+- 微软和谷歌的区别
+- 比较亚马逊和Meta的表现
+
+**Traditional Chinese:**
+- 比較蘋果和特斯拉
+- AAPL對比TSLA
+- 微軟和谷歌的區別
+- 比較亞馬遜和Meta的表現
+
+---
+
+### 6. Chart Requests
+
+**English:**
+- Bitcoin chart
+- show Apple chart
+- TSLA chart
+- chart for Ethereum
+- S&P 500 price chart
+
+**Simplified Chinese:**
+- 比特币图表
+- 显示苹果图表
+- 特斯拉图表
+- 以太坊的图表
+- 标普500价格图表
+
+**Traditional Chinese:**
+- 比特幣圖表
+- 顯示蘋果圖表
+- 特斯拉圖表
+- 以太坊的圖表
+- 標普500價格圖表
+
+---
+
+### 7. Analysis Requests
+
+**English:**
+- analyze Apple
+- Tesla analysis
+- give me analysis of Microsoft
+- financial analysis Amazon
+- analyze NVDA
+
+**Simplified Chinese:**
+- 分析苹果
+- 特斯拉分析
+- 给我微软的分析
+- 亚马逊财务分析
+- 分析英伟达
+
+**Traditional Chinese:**
+- 分析蘋果
+- 特斯拉分析
+- 給我微軟的分析
+- 亞馬遜財務分析
+- 分析輝達
+
+---
+
+### 8. Educational Search
+
+**English:**
+- what is stock
+- what are bonds
+- explain derivatives
+- define dividend
+- tell me about index funds
+- what is ETF
+
+**Simplified Chinese:**
+- 什么是股票
+- 什么是债券
+- 解释衍生品
+- 定义股息
+- 告诉我关于指数基金
+- 什么是ETF
+
+**Traditional Chinese:**
+- 什麼是股票
+- 什麼是債券
+- 解釋衍生品
+- 定義股息
+- 告訴我關於指數基金
+- 什麼是ETF
+
+---
+
+### 9. Transaction Recording
+
+**English:**
+- today I bought 10 shares of Apple
+- I bought TSLA for $5000
+- record buy of Microsoft
+- I sold Tesla
+- record sell
+- I made a transaction
+- record transaction
+
+**Simplified Chinese:**
+- 我今天买了10股苹果
+- 我今天买了特斯拉花了5000美元
+- 记录微软的买入
+- 我今天卖了特斯拉
+- 记录卖出
+- 我今天做了一笔交易
+- 记录交易
+
+**Traditional Chinese:**
+- 我今天買了10股蘋果
+- 我今天買了特斯拉花了5000美元
+- 記錄微軟的買入
+- 我今天賣了特斯拉
+- 記錄賣出
+- 我做了一筆交易
+- 記錄交易
+
+---
+
+### 10. Portfolio & Transaction Views
+
+**English:**
+- show my portfolio
+- view my positions
+- show my P&L
+- show my transactions
+- view transaction history
+- show Apple transactions
+- transactions for TSLA
+
+**Simplified Chinese:**
+- 显示我的投资组合
+- 查看我的持仓
+- 显示我的盈亏
+- 显示我的交易
+- 查看交易历史
+- 显示苹果的交易
+- 特斯拉的交易记录
+
+**Traditional Chinese:**
+- 顯示我的投資組合
+- 查看我的持倉
+- 顯示我的盈虧
+- 顯示我的交易
+- 查看交易歷史
+- 顯示蘋果的交易
+- 特斯拉的交易記錄
+
+---
+
+### 11. Ending Conversation
+
+**English:**
+- goodbye
+- bye
+- exit
+- thanks bye
+
+**Simplified Chinese:**
+- 再见
+- 拜拜
+- 退出
+- 谢谢再见
+
+**Traditional Chinese:**
+- 再見
+- 拜拜
+- 退出
+- 謝謝再見
