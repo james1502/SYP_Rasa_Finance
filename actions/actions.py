@@ -12,7 +12,27 @@ import json
 import urllib.parse  
 import os  
 import logging
-from langdetect import detect
+import jieba
+import re
+
+
+#split
+def tokenize_query(query: str) -> list:
+    """Return a list of tokens (words) from a query, handling both English and Chinese."""
+    if not query:
+        return []
+    
+    # Check if the string contains Chinese characters (Unicode range 4E00-9FFF)
+    if re.search(r'[\u4e00-\u9fff]', query):
+        # Chinese – use jieba for segmentation
+        tokens = list(jieba.cut(query))
+        # Remove spaces and empty strings
+        tokens = [t.strip() for t in tokens if t.strip()]
+        return tokens
+    else:
+        # English or other space-separated languages
+        return query.lower().split()
+    
 #pattern
 
 #check
@@ -47,6 +67,397 @@ def _get_valid_terms_pattern() -> List[str]:
         'releases','launches','introductions','announcements','news',   
         'apple', 'tesla', 'microsoft', 'google', 'alphabet', 'amazon', 'meta', 'facebook', 'nvidia', 'netflix', 'amd', 'intel', 'oracle', 'salesforce', 'adobe', 'ibm', 'cisco', 'bitcoin', 'btc', 'ethereum', 'eth', 'binance coin', 'bnb', 'cardano', 'ada', 'solana', 'sol', 'ripple', 'xrp', 'polkadot', 'dot', 'dogecoin', 'doge', 'avalanche', 'avax', 'polygon', 'matic', 'chainlink', 'link', 'litecoin', 'ltc', 'jpmorgan', 'bank of america', 'wells fargo', 'goldman sachs', 'morgan stanley', 'visa', 'mastercard', 'paypal', 'walmart', 'disney', 'coca cola', 'pepsi', 'mcdonalds', 'nike', 'starbucks'
     ]
+
+# EXTRAc
+
+class ActionExtractSecurityName(Action):
+    """Extract security name from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_security_name"
+    
+    def _extract_company_from_query(self, query: str) -> str:
+        """Extract just the company name from a query"""
+        if not query:
+            return None
+        
+        tokens = tokenize_query(query)
+        # Remove noise words
+        noise_words =_get_noise_words()
+
+        cleaned_tokens = [t for t in tokens if t not in noise_words]
+        
+        if not cleaned_tokens:
+            return None
+        
+        # The first non-noise token is likely the company name
+        candidate = cleaned_tokens[0]
+        
+        # If candidate is multi-character Chinese, keep as is.
+        # If it's English, you might want to map to a known name.
+        return candidate
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        # Use corrected query if available
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        # Extract company name
+        company_name = self._extract_company_from_query(query_to_use)
+        
+        if company_name:
+            # Convert to ticker
+            ticker = _clean_ticker(company_name)
+            return [SlotSet("security_name", ticker)]
+        
+        return [SlotSet("security_name", None)]
+
+class ActionExtractIndexName(Action):
+    """Extract index name from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_index_name"
+    
+    def _extract_index_from_query(self, query: str) -> str:
+        """Extract index name from query"""
+        if not query:
+            return None
+        tokens = tokenize_query(query)
+        noise_words = set(_get_noise_words())
+        cleaned_tokens = [t for t in tokens if t not in noise_words]
+        
+        # Rebuild the query without noise words
+        cleaned_query = " ".join(cleaned_tokens)
+        # Check for known indexes
+        if 's&p' in cleaned_query or 'sp' in cleaned_query or 's and p' in cleaned_query:
+            return 's&p 500'
+        elif 'nasdaq' in cleaned_query:
+            return 'nasdaq'
+        elif 'dow' in cleaned_query:
+            return 'dow jones'
+        elif 'russell' in cleaned_query:
+            return 'russell 2000'
+        elif 'ftse' in cleaned_query:
+            return 'ftse 100'
+        
+        return cleaned_tokens[0] if cleaned_tokens else None
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        index_name = self._extract_index_from_query(query_to_use)
+        
+        return [SlotSet("index_name", index_name)]
+
+class ActionExtractNewsTopic(Action):
+    """Extract news topic from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_news_topic"
+    
+    def _extract_topic_from_query(self, query: str) -> str:
+        """Extract topic from news query"""
+        if not query:
+            return None
+        
+        tokens = tokenize_query(query) 
+        noise_words = set(_get_noise_words())
+        cleaned = [t for t in tokens if t not in noise_words]
+        return cleaned[0] if cleaned else None
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        topic = self._extract_topic_from_query(query_to_use)
+        
+        return [SlotSet("news_topic", topic)]
+
+class ActionExtractComparisonItems(Action):
+    """Extract comparison items from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_comparison_items"
+    
+    def _extract_companies_from_text(self, text: str) -> str:
+        if not text:
+            return None
+        
+        tokens = tokenize_query(text)
+        noise_words = set(_get_noise_words())
+        
+        # Remove noise words and keep only potential company names
+        cleaned_tokens = [t for t in tokens if t not in noise_words]
+        
+        company_to_ticker = {
+        # Tech Companies
+        'apple': 'AAPL',
+        '苹果': 'AAPL',           
+        '蘋果': 'AAPL',          
+        'tesla': 'TSLA',
+        '特斯拉': 'TSLA',        
+        'microsoft': 'MSFT',
+        '微软': 'MSFT',           
+        '微軟': 'MSFT',          
+        'google': 'GOOGL',
+        '谷歌': 'GOOGL',         
+        'alphabet': 'GOOGL',
+        '字母表': 'GOOGL',        
+        '字母表': 'GOOGL',       
+        'amazon': 'AMZN',
+        '亚马逊': 'AMZN',         
+        '亞馬遜': 'AMZN',        
+        'meta': 'META',
+        'meta': 'META',
+        'facebook': 'META',
+        '脸书': 'META',           
+        '臉書': 'META',          
+        'nvidia': 'NVDA',
+        '英伟达': 'NVDA',         
+        '英偉達': 'NVDA',        
+        'netflix': 'NFLX',
+        '奈飞': 'NFLX',           
+        '奈飛': 'NFLX',          
+        
+        # Additional Tech
+        'amd': 'AMD',
+        '超威': 'AMD',           
+        'intel': 'INTC',
+        '英特尔': 'INTC',         
+        '英特爾': 'INTC',        
+        'oracle': 'ORCL',
+        '甲骨文': 'ORCL',        
+        'salesforce': 'CRM',
+        '赛富时': 'CRM',          
+        '賽富時': 'CRM',         
+        'adobe': 'ADBE',
+        '奥多比': 'ADBE',         
+        '奧多比': 'ADBE',        
+        'ibm': 'IBM',
+        'ibm': 'IBM',
+        'cisco': 'CSCO',
+        '思科': 'CSCO',          
+        
+        # Cryptocurrencies
+        'bitcoin': 'BTC-USD',
+        'btc': 'BTC-USD',
+        '比特币': 'BTC-USD',      
+        '比特幣': 'BTC-USD',     
+        'ethereum': 'ETH-USD',
+        'eth': 'ETH-USD',
+        '以太坊': 'ETH-USD',      
+        '以太坊': 'ETH-USD',     
+        'binance coin': 'BNB-USD',
+        'bnb': 'BNB-USD',
+        '币安币': 'BNB-USD',      
+        '幣安幣': 'BNB-USD',     
+        'cardano': 'ADA-USD',
+        'ada': 'ADA-USD',
+        '卡尔达诺': 'ADA-USD',    
+        '卡爾達諾': 'ADA-USD',   
+        'solana': 'SOL-USD',
+        'sol': 'SOL-USD',
+        '索拉纳': 'SOL-USD',      
+        '索拉納': 'SOL-USD',     
+        'ripple': 'XRP-USD',
+        'xrp': 'XRP-USD',
+        '瑞波币': 'XRP-USD',      
+        '瑞波幣': 'XRP-USD',     
+        'polkadot': 'DOT-USD',
+        'dot': 'DOT-USD',
+        '波卡': 'DOT-USD',       
+        'dogecoin': 'DOGE-USD',
+        'doge': 'DOGE-USD',
+        '狗狗币': 'DOGE-USD',     
+        '狗狗幣': 'DOGE-USD',    
+        'avalanche': 'AVAX-USD',
+        'avax': 'AVAX-USD',
+        '雪崩': 'AVAX-USD',      
+        'polygon': 'MATIC-USD',
+        'matic': 'MATIC-USD',
+        '多边形': 'MATIC-USD',    
+        '多邊形': 'MATIC-USD',   
+        'chainlink': 'LINK-USD',
+        'link': 'LINK-USD',
+        '链环': 'LINK-USD',       
+        '鏈環': 'LINK-USD',      
+        'litecoin': 'LTC-USD',
+        'ltc': 'LTC-USD',
+        '莱特币': 'LTC-USD',      
+        '萊特幣': 'LTC-USD',     
+        
+        # Financial Services
+        'jpmorgan': 'JPM',
+        '摩根大通': 'JPM',       
+        'bank of america': 'BAC',
+        '美国银行': 'BAC',        
+        '美國銀行': 'BAC',       
+        'wells fargo': 'WFC',
+        '富国银行': 'WFC',        
+        '富國銀行': 'WFC',       
+        'goldman sachs': 'GS',
+        '高盛': 'GS',            
+        'morgan stanley': 'MS',
+        '摩根士丹利': 'MS',      
+        'visa': 'V',
+        'visa': 'V',
+        'mastercard': 'MA',
+        '万事达': 'MA',           
+        '萬事達': 'MA',          
+        'paypal': 'PYPL',
+        '贝宝': 'PYPL',           
+        '貝寶': 'PYPL',          
+        
+        # Other Major Companies
+        'walmart': 'WMT',
+        '沃尔玛': 'WMT',          
+        '沃爾瑪': 'WMT',         
+        'disney': 'DIS',
+        '迪士尼': 'DIS',         
+        'coca cola': 'KO',
+        '可口可乐': 'KO',         
+        '可口可樂': 'KO',        
+        'pepsi': 'PEP',
+        '百事': 'PEP',           
+        'mcdonalds': 'MCD',
+        '麦当劳': 'MCD',          
+        '麥當勞': 'MCD',         
+        'nike': 'NKE',
+        '耐克': 'NKE',           
+        'starbucks': 'SBUX',
+        '星巴克': 'SBUX',        
+    }
+    
+        
+        
+        # Company name to ticker mapping
+
+        
+        found_tickers = []
+        for token in cleaned_tokens:
+            ticker = company_to_ticker.get(token)
+            if ticker and ticker not in found_tickers:
+                found_tickers.append(ticker)
+            # Also allow direct ticker symbols (e.g., "AAPL")
+            elif token.upper() in company_to_ticker.values():
+                ticker = token.upper()
+                if ticker not in found_tickers:
+                    found_tickers.append(ticker)
+        
+        if len(found_tickers) >= 2:
+            return ", ".join(found_tickers[:2])
+        
+        return None
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        comparison_items = self._extract_companies_from_text(query_to_use)
+        
+        return [SlotSet("comparison_items", comparison_items)]
+
+class ActionExtractAnalysisCompany(Action):
+    """Extract company name for analysis from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_analysis_company"
+    
+    def _extract_company_from_query(self, query: str) -> str:
+        """Extract company name from analysis query"""
+        if not query:
+            return None
+        
+        tokens = tokenize_query(query) 
+        noise_words = set(_get_noise_words())
+        cleaned = [t for t in tokens if t not in noise_words]
+        return cleaned[0] if cleaned else None
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        company_name = self._extract_company_from_query(query_to_use)
+        
+        if company_name:
+            ticker = _clean_ticker(company_name)
+            return [SlotSet("analysis_company", ticker)]
+        
+        return [SlotSet("analysis_company", None)]
+
+class ActionExtractChartAsset(Action):
+    """Extract asset name for chart from user message"""
+    
+    def name(self) -> Text:
+        return "action_extract_chart_asset"
+    
+    def _extract_asset_from_query(self, query: str) -> str:
+        """Extract asset name from chart query"""
+        if not query:
+            return None
+        
+        tokens = tokenize_query(query) 
+        noise_words = set(_get_noise_words())
+        cleaned = [t for t in tokens if t not in noise_words]
+        return cleaned[0] if cleaned else None
+    
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        corrected_query = tracker.get_slot("corrected_query")
+        
+        query_to_use = corrected_query if corrected_query else user_message
+        
+        asset_name = self._extract_asset_from_query(query_to_use)
+        
+        return [SlotSet("chart_asset", asset_name)]
+
 
 #Corrects typos #check
 class ActionCorrectTypo(Action):
@@ -103,239 +514,303 @@ class ActionCorrectTypo(Action):
         # No correction needed - store original
         return [SlotSet("corrected_query", user_message)]    
 
-#yahoo market data #no need
-"""
+# matketdata (alpha)
+
 class ActionFetchMarketData(Action):
+    """Fetch market data - Alpha Vantage with automatic key rotation on rate limit"""
+    
     def name(self) -> Text:
         return "action_fetch_market_data"
     
-    def _extract_company_from_query(self, query: str) -> str:
-        """#Extract just the company name from a query like 'Apple stock price'
-"""
-        if not query:
-            return None
+    def _get_alpha_vantage_keys(self) -> List[str]:
+        """Get list of Alpha Vantage API keys from environment"""
+        keys = []
         
-        # Remove common query terms
-        query_lower = query.lower()
+        # Primary key
+        primary_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+        if primary_key:
+            keys.append(primary_key)
         
-        # Remove noise words
-        noise_words = ['stock', 'price', 'data', 'volume', 'current', 'show', 'me', 
-                      'get', 'fetch', 'what', 'is', 'the', 'of', 'for']
+        # Backup keys (ALPHA_VANTAGE_API_KEY_2, ALPHA_VANTAGE_API_KEY_3, etc.)
+        i = 2
+        while True:
+            backup_key = os.getenv(f"ALPHA_VANTAGE_API_KEY_{i}")
+            if backup_key:
+                keys.append(backup_key)
+                i += 1
+            else:
+                break
         
-        words = query_lower.split()
-        cleaned_words = [w for w in words if w not in noise_words]
-        
-        # Return the first remaining word (likely the company name)
-        if cleaned_words:
-            return cleaned_words[0]
-        
-        return query.strip()
-
+        return keys
+    
     def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-        corrected_query = tracker.get_slot("corrected_query")
+        
         security_name = tracker.get_slot("security_name")
-        
-        # Use corrected query if available, otherwise use security_name
-        query_to_use = corrected_query if corrected_query else security_name
-        
-        # Extract just the company name from the full query
-        company_name = self._extract_company_from_query(query_to_use)
-        
-        # Convert company name to ticker symbol
-        cleaned_ticker = _clean_ticker(company_name)
-
-        if not cleaned_ticker or len(cleaned_ticker) < 2:
+        print(security_name)
+        if not security_name or len(security_name) < 2:
             dispatcher.utter_message(
-                text=f"I couldn't identify a valid stock ticker from '{query_to_use}'. Please provide a ticker symbol like AAPL or a company name like Apple."
+                text="I couldn't identify a valid ticker. Please provide a ticker symbol."
             )
             return [SlotSet("security_name", None)]
         
+        
+        cleaned_yahoo = _clean_ticker(security_name)
+        if cleaned_yahoo.endswith('-USD'):
+            return self._fetch_crypto_data_yfinance(cleaned_yahoo, dispatcher)
+        else:
+            alpha_ticker = to_alpha_vantage_format(security_name)
+            return self._fetch_stock_data_alpha_vantage(alpha_ticker, dispatcher)
+    def _fetch_crypto_data_yfinance(
+        self, 
+        crypto_ticker: str, 
+        dispatcher: CollectingDispatcher
+    ) -> List[Dict[Text, Any]]:
+        """Fetch cryptocurrency data using yfinance"""
+        
         try:
-            ticker = yf.Ticker(cleaned_ticker)
+            ticker = yf.Ticker(crypto_ticker)
+            info = ticker.info
             hist = ticker.history(period="1y")
             
             if hist.empty:
-                raise ValueError(f"No data available for {cleaned_ticker}")
+                raise ValueError(f"No data available for {crypto_ticker}")
             
-            info = ticker.info
-            
-            # Extract data with fallbacks
+            # Extract data
             current_price = info.get('currentPrice') or info.get('regularMarketPrice') or hist['Close'].iloc[-1]
-            volume = info.get('volume') or hist['Volume'].iloc[-1]
-            high_52week = info.get('fiftyTwoWeekHigh') or hist['High'].max()
-            low_52week = info.get('fiftyTwoWeekLow') or hist['Low'].min()
+            volume = info.get('volume') or info.get('regularMarketVolume') or hist['Volume'].iloc[-1]
+            day_high = info.get('dayHigh') or info.get('regularMarketDayHigh') or hist['High'].iloc[-1]
+            day_low = info.get('dayLow') or info.get('regularMarketDayLow') or hist['Low'].iloc[-1]
+            
+            # Calculate change
+            previous_close = info.get('previousClose') or hist['Close'].iloc[-2] if len(hist) > 1 else current_price
+            change = current_price - previous_close
+            change_percent = (change / previous_close * 100) if previous_close != 0 else 0
+            
+            # 52-week high/low
+            high_52week = hist['High'].max()
+            low_52week = hist['Low'].min()
             
             market_data = (
-                f"Current Price: ${current_price:.2f}\n"
-                f"Volume: {int(volume):,}\n"
-                f"52-Week High: ${high_52week:.2f}\n"
-                f"52-Week Low: ${low_52week:.2f}"
+                f"💰 {crypto_ticker}\n\n"
+                f"Current Price: ${current_price:,.2f}\n"
+                f"Change: ${change:+,.2f} ({change_percent:+.2f}%)\n"
+                f"24h Volume: {int(volume):,}\n"
+                f"Day High: ${day_high:,.2f}\n"
+                f"Day Low: ${day_low:,.2f}\n"
+                f"52-Week High: ${high_52week:,.2f}\n"
+                f"52-Week Low: ${low_52week:,.2f}"
             )
             
         except Exception as e:
-            print(f"Error fetching data for {cleaned_ticker}: {str(e)}")
-            market_data = (
-                f"Unable to fetch data for {cleaned_ticker}. "
-                f"Error: {str(e)}\n"
-                f"Please verify the ticker symbol is correct. "
-                f"Common tickers: AAPL (Apple), TSLA (Tesla), MSFT (Microsoft)."
-            )
+            print(f"Error fetching crypto data for {crypto_ticker}: {str(e)}")
+            market_data = f"Unable to fetch data for {crypto_ticker}."
         
         return [
             SlotSet("market_data_output", market_data),
-            SlotSet("security_name", cleaned_ticker)
+            SlotSet("security_name", crypto_ticker)
         ]
-"""
-
-#alpha market
-class ActionFetchMarketData(Action):
-    def name(self) -> Text:
-        return "action_fetch_market_data"
     
-    def _extract_company_from_query(self, query: str) -> str:
-        """Extract just the company name from a query like 'Apple stock price'"""
-        if not query:
-            return None
-        
-        query_lower = query.lower()
-        
-        # Remove noise words
-        noise_words = _get_noise_words()
-
-        words = query_lower.split()
-        cleaned_words = [w for w in words if w not in noise_words]
-        
-        # Return the first remaining word (likely the company name)
-        if cleaned_words:
-            return cleaned_words[0]
-        
-        return query.strip()
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
+    def _fetch_stock_data_alpha_vantage(
+        self, 
+        ticker: str, 
+        dispatcher: CollectingDispatcher
     ) -> List[Dict[Text, Any]]:
+        """Fetch real-time stock data using Alpha Vantage with automatic key rotation"""
         
-        # Replace with your actual Alpha Vantage API key
-        API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+        api_keys = self._get_alpha_vantage_keys()
         
-        corrected_query = tracker.get_slot("corrected_query")
-        security_name = tracker.get_slot("security_name")
+        if not api_keys:
+            market_data = "No Alpha Vantage API keys configured. Please set ALPHA_VANTAGE_API_KEY."
+            return [
+                SlotSet("market_data_output", market_data),
+                SlotSet("security_name", ticker)
+            ]
         
-        print(corrected_query)
-        print(security_name)
-        query_to_use = security_name.lower()
-
-        # Extract just the company name from the full query
-        company_name = self._extract_company_from_query(query_to_use)
+        quote_url = "https://www.alphavantage.co/query"
+        last_error = None
         
-        # Convert company name to ticker symbol
-        cleaned_ticker =to_alpha_vantage_format(company_name)
-
-        if not cleaned_ticker or len(cleaned_ticker) < 2:
-            dispatcher.utter_message(
-                text=f"I couldn't identify a valid stock ticker from '{query_to_use}'. Please provide a ticker symbol like AAPL or a company name like Apple."
-            )
-            return [SlotSet("security_name", None)]
+        # Try each API key in sequence
+        for key_index, api_key in enumerate(api_keys, 1):
+            try:
+                print(f"Attempting Alpha Vantage request with API key #{key_index}")
+                
+                quote_params = {
+                    "function": "GLOBAL_QUOTE",
+                    "symbol": ticker,
+                    "apikey": api_key
+                }
+                
+                quote_response = requests.get(quote_url, params=quote_params, timeout=10)
+                quote_data = quote_response.json()
+                
+                # Check for rate limit
+                if "Note" in quote_data:
+                    rate_limit_msg = quote_data.get("Note", "")
+                    print(f"API key #{key_index} hit rate limit: {rate_limit_msg}")
+                    last_error = "Rate limit reached"
+                    
+                    # Try next key if available
+                    if key_index < len(api_keys):
+                        print(f"Trying backup API key #{key_index + 1}...")
+                        continue
+                    else:
+                        # All keys exhausted, fallback to yfinance
+                        print("All Alpha Vantage API keys exhausted. Falling back to yfinance...")
+                        return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+                
+                # Check for invalid ticker
+                if "Error Message" in quote_data:
+                    raise ValueError(f"Invalid ticker symbol: {ticker}")
+                
+                # Check for empty response
+                if "Global Quote" not in quote_data or not quote_data["Global Quote"]:
+                    raise ValueError(f"No data available for {ticker}")
+                
+                # Success! Extract data
+                quote = quote_data["Global Quote"]
+                
+                current_price = float(quote.get("05. price", 0))
+                volume = int(quote.get("06. volume", 0))
+                day_high = float(quote.get("03. high", 0))
+                day_low = float(quote.get("04. low", 0))
+                previous_close = float(quote.get("08. previous close", 0))
+                change = float(quote.get("09. change", 0))
+                change_percent = float(quote.get("10. change percent", "0").replace("%", ""))
+                
+                # Get 52-week high/low from yfinance
+                try:
+                    yf_ticker = yf.Ticker(ticker)
+                    hist = yf_ticker.history(period="1y")
+                    
+                    if not hist.empty:
+                        high_52week = hist['High'].max()
+                        low_52week = hist['Low'].min()
+                    else:
+                        high_52week = day_high
+                        low_52week = day_low
+                except:
+                    high_52week = day_high
+                    low_52week = day_low
+                
+                print(f"Successfully fetched data using API key #{key_index}")
+                
+                market_data = (
+                    f"📊 {ticker}\n\n"
+                    f"Current Price: ${current_price:.2f}\n"
+                    f"Change: ${change:+.2f} ({change_percent:+.2f}%)\n"
+                    f"Volume: {volume:,}\n"
+                    f"Day High: ${day_high:.2f}\n"
+                    f"Day Low: ${day_low:.2f}\n"
+                    f"52-Week High: ${high_52week:.2f}\n"
+                    f"52-Week Low: ${low_52week:.2f}"
+                )
+                
+                return [
+                    SlotSet("market_data_output", market_data),
+                    SlotSet("security_name", ticker)
+                ]
+                
+            except requests.exceptions.RequestException as e:
+                print(f"Network error with API key #{key_index}: {str(e)}")
+                last_error = str(e)
+                
+                # Try next key if available
+                if key_index < len(api_keys):
+                    continue
+                else:
+                    # All keys failed, fallback to yfinance
+                    print("All Alpha Vantage API keys failed. Falling back to yfinance...")
+                    return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+                    
+            except ValueError as e:
+                # Don't retry on invalid ticker
+                print(f"ValueError: {str(e)}")
+                market_data = str(e)
+                return [
+                    SlotSet("market_data_output", market_data),
+                    SlotSet("security_name", ticker)
+                ]
+                
+            except Exception as e:
+                print(f"Unexpected error with API key #{key_index}: {str(e)}")
+                last_error = str(e)
+                
+                # Try next key if available
+                if key_index < len(api_keys):
+                    continue
+                else:
+                    # All keys failed, fallback to yfinance
+                    print("All Alpha Vantage API keys failed. Falling back to yfinance...")
+                    return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+        
+        # Should not reach here, but just in case
+        market_data = f"Unable to fetch data for {ticker}. Last error: {last_error}"
+        return [
+            SlotSet("market_data_output", market_data),
+            SlotSet("security_name", ticker)
+        ]
+    
+    def _fetch_stock_data_yfinance_fallback(
+        self, 
+        ticker: str, 
+        dispatcher: CollectingDispatcher
+    ) -> List[Dict[Text, Any]]:
+        """Fallback to yfinance when all Alpha Vantage keys are exhausted"""
         
         try:
-            # Alpha Vantage API endpoints
-            quote_url = f"https://www.alphavantage.co/query"
+            print(f"Using yfinance fallback for {ticker}")
             
-            # Get real-time quote data
-            quote_params = {
-                "function": "GLOBAL_QUOTE",
-                "symbol": cleaned_ticker,
-                "apikey": API_KEY
-            }
+            yf_ticker = yf.Ticker(ticker)
+            info = yf_ticker.info
+            hist = yf_ticker.history(period="1y")
             
-            quote_response = requests.get(quote_url, params=quote_params, timeout=10)
-            quote_data = quote_response.json()
+            if hist.empty:
+                raise ValueError(f"No data available for {ticker}")
             
-            # Check for errors
-            if "Error Message" in quote_data:
-                raise ValueError(f"Invalid ticker symbol: {cleaned_ticker}")
+            # Extract data
+            current_price = info.get('currentPrice') or info.get('regularMarketPrice') or hist['Close'].iloc[-1]
+            volume = info.get('volume') or info.get('regularMarketVolume') or hist['Volume'].iloc[-1]
+            day_high = info.get('dayHigh') or info.get('regularMarketDayHigh') or hist['High'].iloc[-1]
+            day_low = info.get('dayLow') or info.get('regularMarketDayLow') or hist['Low'].iloc[-1]
             
-            if "Note" in quote_data:
-                raise ValueError("API rate limit reached. Please try again in a minute.")
+            # Calculate change
+            previous_close = info.get('previousClose') or hist['Close'].iloc[-2] if len(hist) > 1 else current_price
+            change = current_price - previous_close
+            change_percent = (change / previous_close * 100) if previous_close != 0 else 0
             
-            if "Global Quote" not in quote_data or not quote_data["Global Quote"]:
-                raise ValueError(f"No data available for {cleaned_ticker}")
-            
-            quote = quote_data["Global Quote"]
-            
-            # Extract data from Alpha Vantage response
-            current_price = float(quote.get("05. price", 0))
-            volume = int(quote.get("06. volume", 0))
-            high = float(quote.get("03. high", 0))
-            low = float(quote.get("04. low", 0))
-            
-            # Get 52-week high/low (requires TIME_SERIES_DAILY)
-            daily_url = f"https://www.alphavantage.co/query"
-            daily_params = {
-                "function": "TIME_SERIES_DAILY",
-                "symbol": cleaned_ticker,
-                "apikey": API_KEY,
-                "outputsize": "full"  # Get full history for 52-week calculation
-            }
-            
-            daily_response = requests.get(daily_url, params=daily_params, timeout=10)
-            daily_data = daily_response.json()
-            
-            # Calculate 52-week high/low
-            high_52week = high
-            low_52week = low
-            
-            if "Time Series (Daily)" in daily_data:
-                time_series = daily_data["Time Series (Daily)"]
-                
-                # Get last 252 trading days (approximately 1 year)
-                recent_dates = sorted(time_series.keys(), reverse=True)[:252]
-                
-                highs = [float(time_series[date]["2. high"]) for date in recent_dates]
-                lows = [float(time_series[date]["3. low"]) for date in recent_dates]
-                
-                high_52week = max(highs) if highs else high
-                low_52week = min(lows) if lows else low
+            # 52-week high/low
+            high_52week = hist['High'].max()
+            low_52week = hist['Low'].min()
             
             market_data = (
+                f"📊 {ticker} (via backup source)\n\n"
                 f"Current Price: ${current_price:.2f}\n"
-                f"Volume: {volume:,}\n"
+                f"Change: ${change:+.2f} ({change_percent:+.2f}%)\n"
+                f"Volume: {int(volume):,}\n"
+                f"Day High: ${day_high:.2f}\n"
+                f"Day Low: ${day_low:.2f}\n"
                 f"52-Week High: ${high_52week:.2f}\n"
                 f"52-Week Low: ${low_52week:.2f}"
             )
             
-        except requests.exceptions.RequestException as e:
-            print(f"Network error fetching data for {cleaned_ticker}: {str(e)}")
-            market_data = (
-                f"Unable to fetch data for {cleaned_ticker} due to network issues. "
-                f"Please try again later."
-            )
-        except ValueError as e:
-            print(f"Error fetching data for {cleaned_ticker}: {str(e)}")
-            market_data = str(e)
         except Exception as e:
-            print(f"Unexpected error fetching data for {cleaned_ticker}: {str(e)}")
-            market_data = (
-                f"Unable to fetch data for {cleaned_ticker}. "
-                f"Please verify the ticker symbol is correct. "
-                f"Common tickers: AAPL (Apple), TSLA (Tesla), MSFT (Microsoft)."
-            )
+            print(f"Yfinance fallback also failed for {ticker}: {str(e)}")
+            market_data = f"Unable to fetch data for {ticker}. Please try again later."
         
         return [
             SlotSet("market_data_output", market_data),
-            SlotSet("security_name", cleaned_ticker)
+            SlotSet("security_name", ticker)
         ]
+# index info (yqhoo
 
-#
 class ActionFetchIndexInfo(Action):
+    """Fetch index information"""
+    
     def name(self) -> Text:
         return "action_fetch_index_info"
 
@@ -345,29 +820,97 @@ class ActionFetchIndexInfo(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-        index_name = tracker.get_slot("index_name")
         
+        index_name = tracker.get_slot("index_name")
+        print(index_name)
         if not index_name:
             return [SlotSet("index_info_output", "Please specify which index you'd like information about.")]
         
         # Map common index names to Yahoo Finance tickers
         index_mapping = {
+            # S&P 500 variations
             "s&p 500": "^GSPC",
             "s&p500": "^GSPC",
             "sp500": "^GSPC",
             "s and p 500": "^GSPC",
+            "s&p": "^GSPC",
+            "spy": "^GSPC",
+            
+            # Dow Jones variations
             "dow jones": "^DJI",
             "dow": "^DJI",
             "djia": "^DJI",
+            "dia": "^DJI",
+            
+            # NASDAQ variations
             "nasdaq": "^IXIC",
             "nasdaq composite": "^IXIC",
+            "qqq": "^IXIC",
+            
+            # Russell variations
             "russell 2000": "^RUT",
             "russell": "^RUT",
+            "iwm": "^RUT",
+            
+            # FTSE variations
             "ftse 100": "^FTSE",
-            "ftse": "^FTSE"
+            "ftse": "^FTSE",
+            "ftse100": "^FTSE",
+            
+            # International indices
+            "nikkei": "^N225",
+            "nikkei 225": "^N225",
+            
+            # Broad market ETFs (can also track these)
+            "voo": "VOO",
+            "vti": "VTI",
+            "vt": "VT",
+            "vxus": "VXUS",
+            
+            # Emerging markets
+            "eem": "EEM",
+            "emerging": "EEM",
+            "vwo": "VWO",
+            "iefa": "IEFA",
+            "efa": "EFA",
+            
+            # Sector ETFs
+            "xlk": "XLK",  # Technology
+            "xlf": "XLF",  # Financials
+            "xle": "XLE",  # Energy
+            "xlv": "XLV",  # Healthcare
+            "xly": "XLY",  # Consumer Discretionary
+            "xlp": "XLP",  # Consumer Staples
+            "xli": "XLI",  # Industrials
+            "xlb": "XLB",  # Materials
+            "xlre": "XLRE",  # Real Estate
+            "xlu": "XLU",  # Utilities
+            
+            # ARK ETFs
+            "arkk": "ARKK",
+            "arkw": "ARKW",
+            "arkg": "ARKG",
+            "arkf": "ARKF",
+            "arkq": "ARKQ",
+            
+            # Commodity ETFs
+            "gld": "GLD",  # Gold
+            "slv": "SLV",  # Silver
+            "uso": "USO",  # Oil
+            "ung": "UNG",  # Natural Gas
+            
+            # Bond ETFs
+            "tlt": "TLT",  # 20+ Year Treasury
+            "ief": "IEF",  # 7-10 Year Treasury
+            "shy": "SHY",  # 1-3 Year Treasury
+            "hyg": "HYG",  # High Yield Corporate
+            "lqd": "LQD",  # Investment Grade Corporate
+            "jnk": "JNK",  # High Yield
+            "emb": "EMB",  # Emerging Market Bonds
+            "mub": "MUB",  # Municipal Bonds
         }
         
-        # Clean and normalize the index name - REMOVE BACKSLASHES
+        # Clean and normalize the index name
         index_name_clean = index_name.lower().strip().replace("\\", "")
         ticker_symbol = index_mapping.get(index_name_clean, index_name)
         
@@ -403,53 +946,37 @@ class ActionFetchIndexInfo(Action):
             index_info = f"Unable to fetch data for {index_name}. Please verify the index name is correct."
         
         return [SlotSet("index_info_output", index_info)]
-#
-class ActionFetchComparisonData(Action):
-    def name(self) -> Text:
-        return "action_fetch_comparison_data"
 
-    def _fetch_company_metrics(self, ticker_symbol: str) -> Dict:
-        """Fetch key metrics for a single company using yfinance."""
-        try:
-            ticker = yf.Ticker(ticker_symbol)
-            info = ticker.info
-            hist = ticker.history(period="1y")
+# news (alpha)
+class ActionFetchMarketNews(Action):
+    """Fetch market news using Alpha Vantage API"""
+    
+    def name(self) -> Text:
+        return "action_fetch_market_news"
+    
+    def _format_news_output(self, news_data: List[Dict], topic: str) -> str:
+        """Format news data into readable output"""
+        if not news_data:
+            return f"No recent news found for {topic}."
+        
+        # Take top 5 news items
+        news_items = news_data[:5]
+        formatted_news = [f"Latest news about {topic}:\n"]
+        
+        for idx, item in enumerate(news_items, 1):
+            title = item.get('title', 'No title')
+            date = item.get('time_published', 'Unknown date')
+            summary = item.get('summary', '')
             
-            if hist.empty:
-                return None
+            news_entry = f"{idx}. {title}"
+            if date:
+                news_entry += f" ({date})"
+            if summary:
+                news_entry += f"\n   {summary[:150]}..."
             
-            # Current price and basic info
-            current_price = info.get('currentPrice') or info.get('regularMarketPrice') or hist['Close'].iloc[-1]
-            company_name = info.get('longName') or info.get('shortName') or ticker_symbol
-            
-            # Calculate YTD return
-            current_year = datetime.now().year
-            ytd_start = f"{current_year}-01-01"
-            ytd_hist = ticker.history(start=ytd_start)
-            
-            if len(ytd_hist) > 0:
-                ytd_return_pct = ((hist['Close'].iloc[-1] - ytd_hist['Close'].iloc[0]) / ytd_hist['Close'].iloc[0]) * 100
-            else:
-                ytd_return_pct = 0.0
-            
-            # Key financial metrics (with fallbacks)
-            metrics = {
-                'ticker': ticker_symbol,
-                'name': company_name,
-                'current_price': round(current_price, 2),
-                'market_cap': info.get('marketCap'),
-                'pe_ratio': info.get('trailingPE'),
-                'ytd_return': round(ytd_return_pct, 2),
-                '52_week_high': info.get('fiftyTwoWeekHigh') or hist['High'].max(),
-                '52_week_low': info.get('fiftyTwoWeekLow') or hist['Low'].min(),
-                'volume': info.get('volume') or hist['Volume'].iloc[-1],
-            }
-            
-            return metrics
-            
-        except Exception as e:
-            print(f"Error fetching data for {ticker_symbol}: {str(e)}")
-            return None
+            formatted_news.append(news_entry)
+        
+        return "\n\n".join(formatted_news)
 
     def run(
         self,
@@ -457,8 +984,69 @@ class ActionFetchComparisonData(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
+        
+        API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+        
+        news_topic = tracker.get_slot("news_topic")
+        print(news_topic)
+        if not news_topic:
+            news_output = "Please specify what topic or company you'd like news about."
+            return [SlotSet("news_output", news_output)]
+        
+        # Convert topic to ticker if it's a company name
+        ticker = to_alpha_vantage_format(news_topic)
+        
+        try:
+            base_url = "https://www.alphavantage.co/query"
+            
+            params = {
+                "function": "NEWS_SENTIMENT",
+                "tickers": ticker,
+                "apikey": API_KEY,
+                "sort": "LATEST"
+            }
+            
+            response = requests.get(base_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if "feed" in data:
+                news_data = data["feed"]
+                news_output = self._format_news_output(news_data, news_topic)
+            else:
+                news_output = f"Unable to fetch news for {news_topic}. Please try again later."
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching news: {str(e)}")
+            news_output = f"Unable to fetch news for {news_topic}. Please try again later."
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            news_output = f"Unable to fetch news for {news_topic}."
+        
+        return [SlotSet("news_output", news_output)]
+
+# compare
+
+class ActionFetchComparisonData(Action):
+    """Compare performance between securities using Alpha Vantage"""
+    
+    def name(self) -> Text:
+        return "action_fetch_comparison_data"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "YOUR_API_KEY_HERE")
+        
         comparison_items = tracker.get_slot("comparison_items")
         comparison_criteria = tracker.get_slot("comparison_criteria")
+        print("1"+comparison_items)
+        print("2"+comparison_criteria)
         
         if not comparison_items:
             error_msg = "I need at least two items to compare."
@@ -487,10 +1075,13 @@ class ActionFetchComparisonData(Action):
                     period = "1wk"
             
             comparison_results = []
+            percentages = []
+            
             for item in items:
                 ticker_symbol = _clean_ticker(item)
                 
                 try:
+                    # Use yfinance for comparison (more reliable for historical data)
                     ticker = yf.Ticker(ticker_symbol)
                     hist = ticker.history(period=period)
                     
@@ -499,251 +1090,139 @@ class ActionFetchComparisonData(Action):
                         end_price = hist['Close'].iloc[-1]
                         return_pct = ((end_price - start_price) / start_price * 100)
                         
-                        # Enhanced format with current price
                         comparison_results.append(
                             f"{item.strip()}: {return_pct:+.2f}% (${end_price:.2f})"
                         )
+                        percentages.append(return_pct)
                     else:
                         comparison_results.append(f"{item.strip()}: No data")
+                        percentages.append(float('-inf'))
                         
                 except Exception as ticker_error:
+                    print(f"Error fetching data for {item}: {str(ticker_error)}")
                     comparison_results.append(f"{item.strip()}: Error")
+                    percentages.append(float('-inf'))
             
-            # Add summary
+            # Build output
             comparison_output = f"📊 **{period.upper()} Performance Comparison**\n\n"
             comparison_output += "\n".join(comparison_results)
             
             # Add winner summary
-            # Add winner summary
-            if len(comparison_results) == 2:
-                # Extract percentage values from results
-                percentages = []
-                for result in comparison_results:
-                    # Extract the percentage value (e.g., "-5.48%" or "+16.24%")
-                    import re
-                    match = re.search(r'([+-]?\d+\.\d+)%', result)
-                    if match:
-                        percentages.append(float(match.group(1)))
-                    else:
-                        percentages.append(float('-inf'))
-                
-                # Determine winner (higher percentage is better)
+            if len(comparison_results) == 2 and len(percentages) == 2:
                 winner_idx = 0 if percentages[0] > percentages[1] else 1
                 comparison_output += f"\n\n✨ **Winner:** {items[winner_idx]}"
-               
             
         except Exception as e:
-            comparison_output = f"Unable to perform comparison."
+            print(f"Error in comparison: {str(e)}")
+            comparison_output = "Unable to perform comparison."
         
         return [SlotSet("comparison_output", comparison_output)]
 
-    def _format_comparison_table(self, companies_data: List[Dict]) -> str:
-        """Format the comparison data into a readable table."""
-        if not companies_data:
-            return "No comparison data available."
-        
-        # Define the metrics to show in the table
-        headers = ["Metric", companies_data[0]['ticker'], companies_data[1]['ticker']]
-        
-        # Prepare rows for key metrics
-        rows = [
-            ["Company", companies_data[0].get('name', 'N/A'), companies_data[1].get('name', 'N/A')],
-            ["Current Price", f"${companies_data[0].get('current_price', 'N/A'):,}", f"${companies_data[1].get('current_price', 'N/A'):,}"],
-            ["Market Cap", f"${self._format_large_number(companies_data[0].get('market_cap', 0))}", f"${self._format_large_number(companies_data[1].get('market_cap', 0))}"],
-            ["P/E Ratio", f"{companies_data[0].get('pe_ratio', 'N/A'):.2f}" if companies_data[0].get('pe_ratio') else 'N/A', 
-                        f"{companies_data[1].get('pe_ratio', 'N/A'):.2f}" if companies_data[1].get('pe_ratio') else 'N/A'],
-            ["YTD Return", f"{companies_data[0].get('ytd_return', 0):+.2f}%", f"{companies_data[1].get('ytd_return', 0):+.2f}%"],
-            ["52-Week High", f"${companies_data[0].get('52_week_high', 0):.2f}", f"${companies_data[1].get('52_week_high', 0):.2f}"],
-            ["52-Week Low", f"${companies_data[0].get('52_week_low', 0):.2f}", f"${companies_data[1].get('52_week_low', 0):.2f}"],
-        ]
-        
-        # Create the table
-        table = "📊 **Comparison Results**\n\n"
-        table += "| " + " | ".join(headers) + " |\n"
-        table += "|:" + "-|:" * (len(headers)-1) + "-|\n"
-        
-        for row in rows:
-            table += "| " + " | ".join(str(cell) for cell in row) + " |\n"
-        
-        # Add a summary insight
-        table += f"\n**Summary:** {companies_data[0]['ticker']} has a {'higher' if companies_data[0].get('pe_ratio', 0) > companies_data[1].get('pe_ratio', 1) else 'lower'} P/E ratio than {companies_data[1]['ticker']}, indicating {'higher growth expectations' if companies_data[0].get('pe_ratio', 0) > companies_data[1].get('pe_ratio', 1) else 'more value-oriented pricing'}."
-        
-        return table
+#analysis
 
-    def _format_large_number(self, num: float) -> str:
-        """Format large numbers into billions/trillions for readability."""
-        if num is None:
-            return "N/A"
-        
-        if num >= 1e12:
-            return f"{num/1e12:.2f}T"
-        elif num >= 1e9:
-            return f"{num/1e9:.2f}B"
-        elif num >= 1e6:
-            return f"{num/1e6:.2f}M"
-        else:
-            return f"{num:,.0f}"
- #       
-#
-class ActionValidateComparisonItems(Action):
-    def name(self) -> Text:
-        return "validate_comparison_items"
-    
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-        comparison_items = tracker.get_slot("comparison_items")
-        
-        if not comparison_items:
-            return [SlotSet("comparison_items", None)]
-        
-        # Validate format
-        items = comparison_items.split(",") if isinstance(comparison_items, str) else comparison_items
-        
-        if len(items) < 2:
-            dispatcher.utter_message(text="Please provide at least two items to compare.")
-            return [SlotSet("comparison_items", None)]
-        
-        # Validation succeeded
-        return [SlotSet("comparison_items", comparison_items)]
-#
-class ActionFetchMarketNews(Action):
-    """Fetch market news using Massive API"""
-    
-    def name(self) -> Text:
-        return "action_fetch_market_news"
-    
-    def _fetch_news_from_massive_api(self, ticker: str = None) -> List[Dict]:
-        """Fetch news from a financial API (Corrected Version)."""
-        # 1. REPLACE with a valid API Key from Alpha Vantage (get free key at https://www.alphavantage.co/support/#api-key)
-        api_key = "ALPHA_VANTAGE_API_KEY"
-        
-        # 2. CORRECT the endpoint to a NEWS API (Alpha Vantage example)
-        base_url = "https://www.alphavantage.co/query"
-        
-        try:
-            # 3. SET correct parameters for a news API
-            params = {
-                "function": "NEWS_SENTIMENT",
-                "tickers": ticker if ticker else "",
-                "apikey": api_key,
-                "sort": "LATEST"
-            }
-            
-            response = requests.get(base_url, params=params, timeout=10)
-            response.raise_for_status()  # Check for HTTP errors
-            
-            data = response.json()
-            
-            # 4. PARSE the correct response structure (Alpha Vantage returns a dict with a 'feed' key)
-            if "feed" in data:
-                return data["feed"][:5]  # Return top 5 news items
-            else:
-                print(f"Unexpected API response structure: {data}")
-                return []
-                
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching news from API: {str(e)}")
-            return []
-        except json.JSONDecodeError as e:
-            print(f"Error parsing API response as JSON: {str(e)}")
-            return []
-        
-    def _format_news_output(self, news_data: List[Dict], topic: str) -> str:
-        """Format news data into readable output"""
-        if not news_data:
-            return f"No recent news found for {topic}."
-        
-        # Take top 5 news items
-        news_items = news_data[:5]
-        formatted_news = [f"Latest news about {topic}:\n"]
-        
-        for idx, item in enumerate(news_items, 1):
-            # Adjust field names based on actual API response structure
-            title = item.get('title', item.get('headline', 'No title'))
-            date = item.get('date', item.get('published_date', 'Unknown date'))
-            summary = item.get('summary', item.get('description', ''))
-            
-            news_entry = f"{idx}. {title}"
-            if date:
-                news_entry += f" ({date})"
-            if summary:
-                news_entry += f"\n   {summary[:150]}..."
-            
-            formatted_news.append(news_entry)
-        
-        return "\n\n".join(formatted_news)
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-        
-        news_topic = tracker.get_slot("news_topic")
-        
-        if not news_topic:
-            news_output = "Please specify what topic or company you'd like news about."
-            return [SlotSet("news_output", news_output)]
-        
-        # Convert topic to ticker if it's a company name
-        ticker = to_alpha_vantage_format(news_topic)
-        
-        # Fetch news from Massive API
-        news_data = self._fetch_news_from_massive_api(ticker)
-        
-        # Format the output
-        if news_data:
-            news_output = self._format_news_output(news_data, news_topic)
-        else:
-            news_output = f"Unable to fetch news for {news_topic}. Please try again or specify a different company."
-        
-        return [SlotSet("news_output", news_output)]
-#
-class ActionRouteClarifiedQuery(Action):
-
-    def name(self) -> Text:
-        return "action_route_clarified_query"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-        clarified_intent = tracker.get_slot("clarified_intent")
-        return []
-#
 class ActionFetchAnalysis(Action):
-    """Fetch comprehensive financial analysis for a company"""
+    """Fetch comprehensive financial analysis with Ollama-generated summary"""
     
     def name(self) -> Text:
         return "action_fetch_analysis"
+    
+    def _generate_ollama_summary(
+        self, 
+        company_name: str,
+        ticker: str,
+        current_price: float,
+        ytd_return: float,
+        month_return: float,
+        market_cap: float,
+        pe_ratio: float,
+        indicators: Dict
+    ) -> str:
+        """Generate executive summary using Ollama"""
+        
+        try:
+            # Ollama API endpoint
+            ollama_url = "http://localhost:11434/api/generate"
+            
+            # Prepare data for LLM
+            rsi = indicators.get('rsi', 50) if indicators else 50
+            sma_20 = indicators.get('sma_20', current_price) if indicators else current_price
+            sma_50 = indicators.get('sma_50', current_price) if indicators else current_price
+            
+            # Determine trend
+            if current_price > sma_20 > sma_50:
+                trend = "strong uptrend"
+            elif current_price > sma_20:
+                trend = "moderate uptrend"
+            elif current_price < sma_20 < sma_50:
+                trend = "strong downtrend"
+            elif current_price < sma_20:
+                trend = "moderate downtrend"
+            else:
+                trend = "sideways/neutral"
+            
+            # Create prompt
+            prompt = f"""You are a financial analyst. Write a concise 2-3 sentence executive summary for {company_name} ({ticker}) based on the following data:
 
-    def _extract_company_from_query(self, query: str) -> str:
-        """Extract just the company name from a query like 'give me Apple analysis'"""
-        if not query:
-            return None
-        
-        query_lower = query.lower()
-        
-        # Remove noise words
-        noise_words = _get_noise_words()
-        words = query_lower.split()
-        cleaned_words = [w for w in words if w not in noise_words]
-        
-        # Return the first remaining word (likely the company name)
-        if cleaned_words:
-            return cleaned_words[0]
-        
-        return query.strip()
+- Current Price: ${current_price:.2f}
+- Market Cap: ${market_cap:,.0f}
+- YTD Return: {ytd_return:+.2f}%
+- 1-Month Return: {month_return:+.2f}%
+- P/E Ratio: {pe_ratio if pe_ratio else 'N/A'}
+- RSI (14): {rsi:.1f}
+- Trend: {trend}
 
+Write a professional, objective summary that highlights the key performance and technical indicators. Focus on facts, not recommendations. Keep it under 100 words. Do not include any preamble or explanation, just provide the summary."""
+
+            # Call Ollama APIS
+            payload = {
+                "model": "llama3.1:8b",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,
+                    "num_predict": 150
+                }
+            }
+            
+            response = requests.post(
+                ollama_url, 
+                json=payload, 
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                summary = result.get('response', '').strip()
+                
+                # Clean up the response
+                summary = summary.replace("Here is the summary:", "").strip()
+                summary = summary.replace("Here's the summary:", "").strip()
+                
+                return summary if summary else self._template_summary(ytd_return)
+            else:
+                print(f"Ollama API error: {response.status_code}")
+                return self._template_summary(ytd_return)
+            
+        except requests.exceptions.Timeout:
+            print("Ollama API timeout - using template summary")
+            return self._template_summary(ytd_return)
+        except Exception as e:
+            print(f"Error generating Ollama summary: {str(e)}")
+            return self._template_summary(ytd_return)
+    
+    def _template_summary(self, ytd_return: float) -> str:
+        """Fallback template-based summary"""
+        if ytd_return > 20:
+            return f"The stock has shown exceptional year-to-date performance with a {ytd_return:+.2f}% gain."
+        elif ytd_return > 10:
+            return f"The stock has delivered strong year-to-date returns of {ytd_return:+.2f}%."
+        elif ytd_return > 0:
+            return f"The stock has posted modest year-to-date gains of {ytd_return:+.2f}%."
+        else:
+            return f"The stock has experienced a year-to-date decline of {ytd_return:.2f}%."
+    
     def _calculate_technical_indicators(self, hist) -> Dict:
-        """Calculate technical indicators like moving averages and RSI"""
+        """Calculate technical indicators"""
         if hist.empty or len(hist) < 50:
             return {}
         
@@ -751,12 +1230,12 @@ class ActionFetchAnalysis(Action):
         sma_20 = hist['Close'].rolling(window=20).mean().iloc[-1]
         sma_50 = hist['Close'].rolling(window=50).mean().iloc[-1]
         
-        # RSI (Relative Strength Index)
+        # RSI
         delta = hist['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rs = gain / loss
-        rsi = 100 - (100 / (1 + rs.iloc[-1]))
+        rsi = 100 - (100 / (1 + rs.iloc[ -1]))
         
         return {
             'sma_20': sma_20,
@@ -765,7 +1244,7 @@ class ActionFetchAnalysis(Action):
         }
     
     def _get_trend_signal(self, current_price: float, sma_20: float, sma_50: float) -> str:
-        """Determine trend based on moving averages"""
+        """Determine trend"""
         if current_price > sma_20 > sma_50:
             return "Strong Uptrend 📈"
         elif current_price > sma_20:
@@ -778,7 +1257,7 @@ class ActionFetchAnalysis(Action):
             return "Sideways/Neutral ➡️"
     
     def _get_rsi_signal(self, rsi: float) -> str:
-        """Interpret RSI value"""
+        """Interpret RSI"""
         if rsi > 70:
             return "Overbought ⚠️"
         elif rsi < 30:
@@ -786,97 +1265,20 @@ class ActionFetchAnalysis(Action):
         else:
             return "Neutral"
     
-    def _get_performance_description(self, ytd_return: float, month_return: float) -> str:
-        """Generate descriptive text for performance metrics"""
-        descriptions = []
+    def _format_large_number(self, num: float) -> str:
+        """Format large numbers"""
+        if num is None:
+            return "N/A"
         
-        # YTD performance description
-        if ytd_return > 20:
-            descriptions.append(f"The stock has shown exceptional year-to-date performance with a {ytd_return:+.2f}% gain, significantly outperforming the broader market.")
-        elif ytd_return > 10:
-            descriptions.append(f"The stock has delivered strong year-to-date returns of {ytd_return:+.2f}%, indicating solid investor confidence.")
-        elif ytd_return > 0:
-            descriptions.append(f"The stock has posted modest year-to-date gains of {ytd_return:+.2f}%, showing positive but measured growth.")
-        elif ytd_return > -10:
-            descriptions.append(f"The stock has experienced a slight year-to-date decline of {ytd_return:.2f}%, reflecting some market headwinds.")
+        if num >= 1e12:
+            return f"{num/1e12:.2f}T"
+        elif num >= 1e9:
+            return f"{num/1e9:.2f}B"
+        elif num >= 1e6:
+            return f"{num/1e6:.2f}M"
         else:
-            descriptions.append(f"The stock has faced significant year-to-date challenges with a {ytd_return:.2f}% loss, underperforming the market.")
-        
-        # Recent momentum description
-        if month_return > 5:
-            descriptions.append(f"Recent momentum has been particularly strong with a {month_return:+.2f}% gain over the past month.")
-        elif month_return > 0:
-            descriptions.append(f"The stock has maintained positive momentum with a {month_return:+.2f}% increase in the last month.")
-        elif month_return > -5:
-            descriptions.append(f"Recent performance has been slightly negative with a {month_return:.2f}% decline over the past month.")
-        else:
-            descriptions.append(f"The stock has experienced notable weakness recently, down {month_return:.2f}% in the past month.")
-        
-        return " ".join(descriptions)
-    
-    def _get_valuation_description(self, pe_ratio: float, forward_pe: float, peg_ratio: float) -> str:
-        """Generate descriptive text for valuation metrics"""
-        descriptions = []
-        
-        if pe_ratio:
-            if pe_ratio > 30:
-                descriptions.append(f"With a P/E ratio of {pe_ratio:.2f}, the stock trades at a premium valuation, suggesting high growth expectations from investors.")
-            elif pe_ratio > 20:
-                descriptions.append(f"The P/E ratio of {pe_ratio:.2f} indicates a moderate valuation, typical for established growth companies.")
-            elif pe_ratio > 15:
-                descriptions.append(f"At a P/E ratio of {pe_ratio:.2f}, the stock appears reasonably valued relative to earnings.")
-            else:
-                descriptions.append(f"The P/E ratio of {pe_ratio:.2f} suggests the stock may be undervalued or facing growth concerns.")
-        
-        if peg_ratio:
-            if peg_ratio < 1:
-                descriptions.append(f"The PEG ratio of {peg_ratio:.2f} indicates the stock may be undervalued relative to its growth rate.")
-            elif peg_ratio < 2:
-                descriptions.append(f"The PEG ratio of {peg_ratio:.2f} suggests fair valuation considering growth prospects.")
-            else:
-                descriptions.append(f"The PEG ratio of {peg_ratio:.2f} may indicate the stock is expensive relative to its growth potential.")
-        
-        return " ".join(descriptions) if descriptions else "Valuation metrics suggest a balanced risk-reward profile."
-    
-    def _get_technical_description(self, current_price: float, indicators: Dict) -> str:
-        """Generate descriptive text for technical indicators"""
-        descriptions = []
-        
-        sma_20 = indicators.get('sma_20', 0)
-        sma_50 = indicators.get('sma_50', 0)
-        rsi = indicators.get('rsi', 50)
-        
-        # Trend description
-        if current_price > sma_20 > sma_50:
-            descriptions.append("The stock is in a strong uptrend with price trading above both key moving averages, indicating bullish momentum.")
-        elif current_price > sma_20:
-            descriptions.append("The stock shows moderate upward momentum with price above the 20-day moving average.")
-        elif current_price < sma_20 < sma_50:
-            descriptions.append("The stock is in a downtrend with price below both moving averages, suggesting bearish pressure.")
-        else:
-            descriptions.append("The stock is trading in a neutral range with mixed technical signals.")
-        
-        # RSI description
-        if rsi > 70:
-            descriptions.append(f"The RSI of {rsi:.1f} indicates overbought conditions, suggesting potential for a pullback.")
-        elif rsi < 30:
-            descriptions.append(f"The RSI of {rsi:.1f} shows oversold conditions, which could present a buying opportunity.")
-        else:
-            descriptions.append(f"The RSI of {rsi:.1f} is in neutral territory, indicating balanced buying and selling pressure.")
-        
-        return " ".join(descriptions)
-    
-    def _get_volume_description(self, volume_ratio: float) -> str:
-        """Generate descriptive text for volume analysis"""
-        if volume_ratio > 2:
-            return "Trading volume is exceptionally high, indicating strong investor interest and potentially significant price action."
-        elif volume_ratio > 1.5:
-            return "Trading volume is elevated above average, suggesting increased market activity and attention."
-        elif volume_ratio > 0.8:
-            return "Trading volume is within normal ranges, indicating steady market participation."
-        else:
-            return "Trading volume is below average, which may indicate reduced market interest or liquidity concerns."
-    
+            return f"{num:,.0f}"
+
     def run(
         self,
         dispatcher: CollectingDispatcher,
@@ -884,31 +1286,14 @@ class ActionFetchAnalysis(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        corrected_query = tracker.get_slot("corrected_query")
         analysis_company = tracker.get_slot("analysis_company")
-        
-        # Use corrected query if available, otherwise use analysis_company
-        query_to_use = corrected_query if corrected_query else analysis_company
-        
-        if not query_to_use:
+        print(analysis_company)
+
+        if not analysis_company:
             analysis_output = "Please specify which company you'd like me to analyze."
             return [SlotSet("analysis_output", analysis_output)]
         
-        # Extract just the company name from the full query
-        company_name = self._extract_company_from_query(query_to_use)
-        
-        # Convert company name to ticker symbol
-        ticker_symbol = _clean_ticker(company_name)
-        
-        if not ticker_symbol or len(ticker_symbol) < 2:
-            analysis_output = (
-                f"I couldn't identify a valid company from '{query_to_use}'. "
-                f"Please provide a company name like Apple or a ticker symbol like AAPL."
-            )
-            return [
-                SlotSet("analysis_output", analysis_output),
-                SlotSet("analysis_company", None)
-            ]
+        ticker_symbol = analysis_company
         
         try:
             ticker = yf.Ticker(ticker_symbol)
@@ -953,13 +1338,22 @@ class ActionFetchAnalysis(Action):
             current_volume = hist['Volume'].iloc[-1]
             volume_ratio = (current_volume / avg_volume) if avg_volume > 0 else 1.0
             
-            # Build Analysis Output with Descriptions
+            # Build Analysis Output
             analysis_output = f"**{company_full_name} ({ticker_symbol}) - Comprehensive Analysis**\n\n"
             
-            # Executive Summary
+            # Ollama-Generated Executive Summary
             analysis_output += "📋 **Executive Summary:**\n"
-            analysis_output += self._get_performance_description(ytd_return, month_return)
-            analysis_output += "\n\n"
+            ollama_summary = self._generate_ollama_summary(
+                company_full_name,
+                ticker_symbol,
+                current_price,
+                ytd_return,
+                month_return,
+                market_cap,
+                pe_ratio,
+                indicators
+            )
+            analysis_output += f"{ollama_summary}\n\n"
             
             # Current Status
             analysis_output += f"💰 **Current Market Data:**\n"
@@ -971,20 +1365,21 @@ class ActionFetchAnalysis(Action):
             analysis_output += f"  • YTD Return: {ytd_return:+.2f}%\n"
             analysis_output += f"  • 1-Month Return: {month_return:+.2f}%\n\n"
             
-            # Technical Analysis with Description
+            # Technical Analysis
             if indicators:
                 analysis_output += f"🔍 **Technical Analysis:**\n"
-                analysis_output += self._get_technical_description(current_price, indicators)
-                analysis_output += f"\n\n  • Trend: {self._get_trend_signal(current_price, indicators.get('sma_20', 0), indicators.get('sma_50', 0))}\n"
-                analysis_output += f"  • RSI (14): {indicators.get('rsi', 0):.1f} - {self._get_rsi_signal(indicators.get('rsi', 50))}\n"
-                analysis_output += f"  • 20-Day SMA: ${indicators.get('sma_20', 0):.2f}\n"
-                analysis_output += f"  • 50-Day SMA: ${indicators.get('sma_50', 0):.2f}\n\n"
+                sma_20 = indicators.get('sma_20', 0)
+                sma_50 = indicators.get('sma_50', 0)
+                rsi = indicators.get('rsi', 50)
+                
+                analysis_output += f"  • Trend: {self._get_trend_signal(current_price, sma_20, sma_50)}\n"
+                analysis_output += f"  • RSI (14): {rsi:.1f} - {self._get_rsi_signal(rsi)}\n"
+                analysis_output += f"  • 20-Day SMA: ${sma_20:.2f}\n"
+                analysis_output += f"  • 50-Day SMA: ${sma_50:.2f}\n\n"
             
-            # Valuation with Description
+            # Valuation
             if pe_ratio or forward_pe:
                 analysis_output += f"💼 **Valuation Analysis:**\n"
-                analysis_output += self._get_valuation_description(pe_ratio, forward_pe, peg_ratio)
-                analysis_output += "\n\n"
                 if pe_ratio:
                     analysis_output += f"  • P/E Ratio: {pe_ratio:.2f}\n"
                 if forward_pe:
@@ -993,109 +1388,31 @@ class ActionFetchAnalysis(Action):
                     analysis_output += f"  • PEG Ratio: {peg_ratio:.2f}\n"
                 analysis_output += "\n"
             
-            # Volume with Description
+            # Volume
             analysis_output += f"📊 **Volume Analysis:**\n"
-            analysis_output += self._get_volume_description(volume_ratio)
-            analysis_output += f"\n\n  • Current Volume: {int(current_volume):,}\n"
+            analysis_output += f"  • Current Volume: {int(current_volume):,}\n"
             analysis_output += f"  • Avg Volume: {int(avg_volume):,}\n"
             analysis_output += f"  • Volume Ratio: {volume_ratio:.2f}x {'(High Activity)' if volume_ratio > 1.5 else '(Normal)'}\n"
             
         except Exception as e:
             print(f"Error fetching analysis for {ticker_symbol}: {str(e)}")
-            analysis_output = (
-                f"Unable to fetch analysis for {ticker_symbol}. "
-                f"Please verify the ticker symbol is correct."
-            )
+            analysis_output = f"Unable to fetch analysis for {ticker_symbol}. Please verify the ticker symbol is correct."
         
         return [
             SlotSet("analysis_output", analysis_output),
             SlotSet("analysis_company", ticker_symbol)
         ]
     
-    def _format_large_number(self, num: float) -> str:
-        """Format large numbers into billions/trillions"""
-        if num is None or num == 0:
-            return "N/A"
-#
+#chart
+
 class ActionShowChart(Action):
+    """Generate and display charts"""
     
     def name(self) -> Text:
         return "action_show_chart"
 
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        
-        # Get corrected query first
-        corrected_query = tracker.get_slot("corrected_query")
-        message = corrected_query if corrected_query else tracker.latest_message.get("text", "").lower()
-        
-        # Extract asset name from the message
-        asset_name = self._extract_asset_from_message(message)
-        
-        if not asset_name:
-            dispatcher.utter_message(text="📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'")
-            return []
-        
-        asset_lower = asset_name.lower()
-        
-        # Define mappings
-        crypto_map = {
-            "bitcoin": "bitcoin", "btc": "bitcoin",
-            "ethereum": "ethereum", "eth": "ethereum",
-            "dogecoin": "dogecoin", "doge": "dogecoin",
-            "solana": "solana", "sol": "solana",
-            "cardano": "cardano", "ada": "cardano",
-            "binancecoin": "binancecoin", "bnb": "binancecoin",
-            "ripple": "ripple", "xrp": "ripple",
-            "avalanche-2": "avalanche-2", "avax": "avalanche-2",
-            "chainlink": "chainlink", "link": "chainlink",
-            "matic-network": "matic-network", "matic": "matic-network",
-            "polygon": "matic-network",
-            "uniswap": "uniswap", "uni": "uniswap",
-            "cosmos": "cosmos", "atom": "cosmos",
-            "polkadot": "polkadot", "dot": "polkadot",
-            "litecoin": "litecoin", "ltc": "litecoin"
-        }
-        
-        index_map = {
-            "sp500": "SPY", "s&p 500": "SPY", "s&p": "SPY", "s and p 500": "SPY",
-            "nasdaq": "QQQ",
-            "dow": "DIA", "dow jones": "DIA",
-            "ftse100": "EWU", "ftse": "EWU",
-            "nikkei": "EWJ"
-        }
-        
-        # Check if it's a crypto
-        if asset_lower in crypto_map or asset_lower in crypto_map.values():
-            coin_id = crypto_map.get(asset_lower, asset_lower)
-            return self.show_crypto_chart(dispatcher, coin_id)
-        
-        # Check if it's an index
-        elif asset_lower in index_map:
-            symbol = index_map.get(asset_lower)
-            return self.show_index_chart(dispatcher, asset_lower, symbol)
-        
-        # Otherwise treat as stock ticker
-        else:
-            ticker_symbol = _clean_ticker(asset_name)
-            return self.show_stock_chart(dispatcher, ticker_symbol)
-    
-    def _extract_asset_from_message(self, message: str) -> str:
-        """Extract asset name from user message"""
-        # Remove noise words
-        noise_words = _get_noise_words()
-        words = message.lower().split()
-        cleaned_words = [w for w in words if w not in noise_words]
-        
-        # Return the cleaned phrase
-        if cleaned_words:
-            return " ".join(cleaned_words)
-        
-        return None
-    
     def generate_quickchart_url(self, labels: list, data: list, title: str, is_positive: bool) -> str:
-        """Generate QuickChart URL for visualization"""
+        """Generate QuickChart URL"""
         color = "rgb(0, 211, 149)" if is_positive else "rgb(255, 107, 107)"
         bg_color = "rgba(0, 211, 149, 0.2)" if is_positive else "rgba(255, 107, 107, 0.2)"
         
@@ -1144,6 +1461,61 @@ class ActionShowChart(Action):
         chart_json = json.dumps(chart_config)
         encoded = urllib.parse.quote(chart_json)
         return f"https://quickchart.io/chart?c={encoded}&backgroundColor=%231a1a2e&width=500&height=300"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        chart_asset = tracker.get_slot("chart_asset")
+        print(chart_asset)
+
+        if not chart_asset:
+            dispatcher.utter_message(text="📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'")
+            return []
+        
+        asset_lower = chart_asset.lower()
+        
+        # Define mappings
+        crypto_map = {
+            "bitcoin": "bitcoin", "btc": "bitcoin",
+            "ethereum": "ethereum", "eth": "ethereum",
+            "dogecoin": "dogecoin", "doge": "dogecoin",
+            "solana": "solana", "sol": "solana",
+            "cardano": "cardano", "ada": "cardano",
+            "binancecoin": "binancecoin", "bnb": "binancecoin",
+            "ripple": "ripple", "xrp": "ripple",
+            "avalanche-2": "avalanche-2", "avax": "avalanche-2",
+            "chainlink": "chainlink", "link": "chainlink",
+            "matic-network": "matic-network", "matic": "matic-network",
+            "polygon": "matic-network",
+            "uniswap": "uniswap", "uni": "uniswap",
+            "cosmos": "cosmos", "atom": "cosmos",
+            "polkadot": "polkadot", "dot": "polkadot",
+            "litecoin": "litecoin", "ltc": "litecoin"
+        }
+        
+        index_map = {
+            "sp500": "SPY", "s&p 500": "SPY", "s&p": "SPY", "s and p 500": "SPY",
+            "nasdaq": "QQQ",
+            "dow": "DIA", "dow jones": "DIA",
+            "ftse100": "EWU", "ftse": "EWU",
+            "nikkei": "EWJ"
+        }
+        
+        # Check if it's a crypto
+        if asset_lower in crypto_map or asset_lower in crypto_map.values():
+            coin_id = crypto_map.get(asset_lower, asset_lower)
+            return self.show_crypto_chart(dispatcher, coin_id)
+        
+        # Check if it's an index
+        elif asset_lower in index_map:
+            symbol = index_map.get(asset_lower)
+            return self.show_index_chart(dispatcher, asset_lower, symbol)
+        
+        # Otherwise treat as stock ticker
+        else:
+            ticker_symbol = _clean_ticker(chart_asset)
+            return self.show_stock_chart(dispatcher, ticker_symbol)
     
     def show_crypto_chart(self, dispatcher: CollectingDispatcher, coin_id: str) -> List[Dict[Text, Any]]:
         """Generate chart for cryptocurrency"""
@@ -1216,7 +1588,7 @@ class ActionShowChart(Action):
         return []
     
     def show_index_chart(self, dispatcher: CollectingDispatcher, index_name: str, symbol: str) -> List[Dict[Text, Any]]:
-        """Generate chart for market index using yfinance (simpler than Alpha Vantage)"""
+        """Generate chart for market index"""
         try:
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="7d")
@@ -1247,6 +1619,7 @@ class ActionShowChart(Action):
             dispatcher.utter_message(text=f"📊 Error generating chart for {index_name}.")
         
         return []
+
 
 #yahoo (T&S cinese) #check
 def _clean_ticker(item: str) -> str:

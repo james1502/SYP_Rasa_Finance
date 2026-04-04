@@ -109,7 +109,6 @@ slots:
       - type: from_llm
 
 
-
 actions:
   - action_fetch_market_data
   - action_fetch_index_info
@@ -119,6 +118,13 @@ actions:
   - validate_comparison_items
   - action_fetch_analysis
   - action_show_chart
+#extract
+  - action_extract_security_name
+  - action_extract_index_name
+  - action_extract_news_topic
+  - action_extract_comparison_items
+  - action_extract_analysis_company
+  - action_extract_chart_asset
   #mid
   - action_save_transaction
   - action_get_transactions

@@ -1,8 +1,8 @@
 recipe: default.v1
 language: en
-#Sadditional_languages:
-#  - zh-TW  #Traditional  Chinese
-#  - zh-CN  # Simplified Chinese
+additional_languages:
+  - zh-TW  #Traditional  Chinese
+  - zh-CN  # Simplified Chinese
 
 pipeline:
   - name: SearchReadyLLMCommandGenerator
@@ -27,5 +27,5 @@ policies:
       debug: true
     top_k: 5
     use_generative_llm: true
-    #prompt_template: prompts/enterprise-search.jinja2
+    prompt_template: prompts//enterprise-search-policy-template.jinja2
 assistant_id: 20251127-124921-unsorted-bardolino
