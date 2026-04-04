@@ -1,3 +1,0 @@
-A cryptocurrency index tracks a basket of digital assets, providing an average price and trend for the whole market rather than a single coin. Examples include the Crypto20 index or the Bloomberg Galaxy Crypto Index.
-
-These indexes help investors assess market performance, volatility, and trends across the cryptocurrency sector.
