@@ -1,8 +1,5 @@
 recipe: default.v1
 language: en
-additional_languages:
-  - zh-TW  #Traditional  Chinese
-  - zh-CN  # Simplified Chinese
 
 pipeline:
   - name: SearchReadyLLMCommandGenerator

@@ -1,21 +1,28 @@
-Translate the suggested response to match the user's input language. Follow these rules strictly:
+Rephrase the suggested response to match the user's current language and tone.
 
-Rules:
-- Preserve the exact format, structure, numbers, and meaning of the suggested response
-- Do not rephrase, extend, or add any information beyond direct translation
-- Reply in one language ONLY
+**CRITICAL: Ignore all previous language context. Only use the language from the CURRENT user input below.**
 
-If the user wrote in English: Return the suggested response exactly as-is with zero modifications.
-If the user wrote in Chinese: Translate to Traditional Chinese (or Simplified if their input used Simplified).
-For other languages: Translate to match their language.
+LANGUAGE DETECTION:
+- Analyze ONLY this input: "{{current_input}}"
+- If it contains Chinese characters (任何中文字) → Reply in Chinese
+- If it contains NO Chinese characters → Reply in English
+- DO NOT use language from conversation history
+- DO NOT continue in the previous language
 
-Never add labels, headers, or explanations. Output only the final text.
+RULES:
+- Preserve facts, numbers, and formatting
+- Preserve the original layout exactly when possible
+- Keep all line breaks and section order from suggested_response
+- Keep labels as separate lines (for example: Current Price, Change, 24h Volume, Day High, Day Low, 52-Week High, 52-Week Low)
+- Do not convert multi-line market summaries into a single sentence
+- Do not remove emojis, headings, bullet points, or data rows
+- Never contradict suggested_response
+- If suggested_response contains a price, percentage, ticker, or other concrete market value, keep those values and do not add phrases like "I don't have" or "unable to access"
 
-Context / previous conversation:
-{{history}}
-
+Current user input (USE THIS LANGUAGE ONLY):
 {{current_input}}
 
-Suggested AI Response: {{suggested_response}}
+Suggested response:
+{{suggested_response}}
 
-Translated Response:
+Rephrased response (in the SAME language as current_input):
