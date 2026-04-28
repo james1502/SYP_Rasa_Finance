@@ -1,0 +1,23 @@
+﻿---
+TOPIC: Dollar-Cost Averaging
+CATEGORY: Investment Strategy
+RELATED_CONCEPTS: Systematic Investing, Market Timing, Volatility
+KEYWORDS: DCA, dollar cost averaging, regular investing, volatility, compound
+---
+
+# Dollar-Cost Averaging (DCA)
+
+Dollar-cost averaging means investing a fixed amount at regular intervals, regardless of price.
+
+## BEGINNER LEVEL
+Instead of investing 12000 dollars at once, you invest 1000 dollars each month for a year. When prices are low, your money buys more shares. When prices are high, it buys fewer shares. This smooths your purchase price over time.
+
+## INTERMEDIATE LEVEL
+Mathematically, DCA lowers the average cost per share over time compared to the average price, but it does not guarantee a profit. It reduces the risk of timing disaster - investing a lump sum right before a market crash.
+Studies show lump-sum investing usually outperforms DCA in rising markets, but DCA provides psychological comfort and discipline for investors.
+
+## ADVANCED LEVEL
+True DCA versus periodic investing: if you already have a lump sum, holding cash to DCA lowers expected returns because cash drag offsets the benefit.
+DCA is most beneficial when volatility is high and markets are mean-reverting.
+Combining DCA with value averaging (investing more when markets fall, less when they rise) can enhance returns but requires active monitoring.
+In retirement decumulation, a reverse DCA strategy with systematic withdrawals helps manage sequence of returns risk.

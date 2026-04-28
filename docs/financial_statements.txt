@@ -1,0 +1,44 @@
+---
+TOPIC: Financial Statements
+CATEGORY: Fundamental Analysis
+RELATED_CONCEPTS: Stock Valuation, Fundamental Analysis, Ratios
+KEYWORDS: income statement, balance sheet, cash flow statement, revenue, earnings, assets, liabilities
+---
+
+# Financial Statements Explained
+
+Financial Statements Explained
+
+Financial statements are the report card of a company.
+
+BEGINNER LEVEL
+
+Income Statement: Shows revenue (sales), expenses, and profit (bottom line) over a period. Think: "How much money did the company make?"
+
+Balance Sheet: A snapshot of what the company owns (assets) and owes (liabilities), plus shareholders' equity. Think: "What is the company worth right now?"
+
+Cash Flow Statement: Tracks cash in and out from operations, investing, and financing. Even profitable companies can run out of cash.
+
+INTERMEDIATE LEVEL
+
+Revenue vs. profit: High revenue doesn't mean high profit if costs are out of control.
+
+Operating income (EBIT): Earnings before interest and taxes, showing core profitability.
+
+Debt-to-equity: Measures financial leverage. High levels increase risk.
+
+Free cash flow (FCF): Cash from operations minus capital expenditures. A key measure of financial health.
+
+Quality of earnings: Sustainable profits come from core operations, not one-time events or accounting tricks.
+
+ADVANCED LEVEL
+
+Accrual accounting vs. cash accounting: Understanding non-cash items like depreciation, stock-based compensation.
+
+Red flags: Rising receivables faster than sales, inventory buildup, aggressive revenue recognition.
+
+Segment reporting: Breaking down performance by business unit or geography.
+
+Footnotes: Often hide critical information about debt covenants, lawsuits, or off-balance-sheet items.
+
+Pro-forma adjustments: Companies sometimes strip out "bad" items to present a rosy picture; always compare to GAAP numbers.

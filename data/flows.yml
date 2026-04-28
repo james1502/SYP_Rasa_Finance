@@ -19,6 +19,26 @@ flows:
               - action: utter_ask_rephrase
                 next: END
 
+  # Set lvl
+  set_expertise_level:
+    description: >
+      Set the user's investment knowledge level when they say "I'm a beginner", 
+      "I'm experienced", "I'm an expert", "I'm new to investing", or ask to change their level.
+      Also triggered by phrases like "explain for beginners", "I'm advanced", "simple explanation".
+    steps:
+      - collect: user_expertise_level
+        description: >
+          Extract the expertise level from the user's message.
+          Map to exactly one of these values: "beginner", "intermediate", "advanced".
+          
+          Examples:
+          - "beginner" from: "I'm new to investing", "I'm a beginner", "explain simply", "I don't know much"
+          - "intermediate" from: "I have some experience", "I'm intermediate", "I know the basics"
+          - "advanced" from: "I'm an expert", "I'm advanced", "technical explanation", "I'm a professional trader"
+          
+          Extract ONLY the level, not the full phrase.
+      - action: utter_expertise_set
+        
   # Educational search flow
   search_flow:
     description: >
@@ -118,7 +138,6 @@ flows:
       - id: fetch_news
         action: action_fetch_market_news
       - action: utter_news_results
-      - action: utter_ask_followup
 
   # Comparison 
   handle_comparison_query:
@@ -162,7 +181,6 @@ flows:
       - id: fetch_comparison
         action: action_fetch_comparison_data
       - action: utter_comparison_results
-      - action: utter_ask_followup
 
   # Chart 
   handle_chart_query:
@@ -191,7 +209,6 @@ flows:
       
       - id: show_chart
         action: action_show_chart
-      - action: utter_ask_followup
 
   # Analysis 
   handle_analysis_query:
@@ -222,7 +239,6 @@ flows:
       - id: fetch_analysis
         action: action_fetch_analysis
       - action: utter_analysis_results
-      - action: utter_ask_followup
 
   # Greeting
   greet_user:
@@ -241,12 +257,14 @@ flows:
       - action: utter_goodbye
 
   # Pattern completed
+  
   pattern_completed:
     description: Ask if the user needs more help after completing their request
     steps:
       - action: utter_can_do_something_else
 
   # Intent clarification
+  
   pattern_clarification:
     description: Handle ambiguous requests that could match multiple flows by asking the user to clarify their intent
     steps:

@@ -1,0 +1,29 @@
+---
+TOPIC: Saving vs. Investing
+CATEGORY: Personal Finance Fundamentals
+RELATED_CONCEPTS: Emergency Fund, Risk, Compound Interest, Cash Management
+KEYWORDS: saving, investing, emergency fund, cash, short-term, long-term
+---
+
+# Saving vs. Investing: What’s the Difference?
+
+Saving is setting aside money for short‑term needs with minimal risk. Investing is putting money to work for long‑term growth, accepting higher risk.
+
+## BEGINNER LEVEL
+- Saving: For goals under 3‑5 years (e.g., vacation, emergency fund). Keep it in a high‑yield savings account or money market fund.
+- Investing: For goals 5+ years away (retirement, a child’s education). Use stocks, bonds, or funds.
+- Why not keep everything in cash? Inflation eats your savings over time.
+
+## INTERMEDIATE LEVEL
+- **Emergency fund**: 3‑6 months of living expenses in liquid, safe savings – before any investing.
+- **Short‑term vs. long‑term portfolio**: Short‑term money should avoid stock market volatility.
+- **Risk‑return trade‑off**: Savings are stable but low return; investments can double or halve quickly.
+- **CDs and government bonds** bridge the gap: better yield than savings but with some lock‑up period.
+- **Psychology**: Seeing investment balances drop may cause panic selling; only invest money you won’t need soon.
+
+## ADVANCED LEVEL
+- **Cash drag**: Holding too much cash in a long‑term portfolio reduces overall returns.
+- **Inflation‑adjusted emergency fund**: Use T‑bills or TIPS to partially protect purchasing power.
+- **Bucketing strategy**: Segment wealth by time horizon – cash (0‑2 years), bonds (2‑5 years), stocks (5+ years).
+- **Sequence‑of‑returns mitigation**: Near retirement, shifting 2‑3 years’ withdrawals to cash/bonds can protect against selling stocks in a downturn.
+- **Opportunity cost**: During market crashes, a well‑funded emergency reserve prevents selling assets at lows.

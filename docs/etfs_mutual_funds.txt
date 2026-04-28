@@ -1,0 +1,30 @@
+---
+TOPIC: ETFs & Mutual Funds
+CATEGORY: Investment Vehicles
+RELATED_CONCEPTS: Index Funds, Diversification, Passive vs Active Investing
+KEYWORDS: ETF, mutual fund, index fund, expense ratio, diversification, Vanguard, SPY
+---
+
+# ETFs vs Mutual Funds
+
+Both pool money from many investors to buy a diversified basket of assets. They differ in trading, fees, and tax treatment.
+
+## BEGINNER LEVEL
+Think of a fruit basket – an ETF or mutual fund is like buying the whole basket instead of picking individual fruits (stocks). You get instant diversification.
+
+## INTERMEDIATE LEVEL
+| Feature | ETF | Mutual Fund |
+|---------|-----|-------------|
+| Trading | Intraday on exchange | Once per day after close |
+| Minimum | 1 share (often <$100) | Often $1,000+ |
+| Expense ratio | Typically 0.03%–0.25% | Often 0.5%–1.5% |
+| Tax efficiency | More tax‑efficient | Can distribute capital gains |
+
+**Example**: SPY (SPDR S&P 500 ETF) tracks the S&P 500. Buying 1 share of SPY at $500 gives you exposure to 500 large US companies.
+
+## ADVANCED LEVEL
+ETF creation/redemption happens in‑kind with authorized participants, which minimises capital gains distributions.  
+- **Bid‑ask spread** and **premium/discount to NAV** affect real cost.  
+- **Liquidity** depends on underlying asset liquidity, not just ETF volume.  
+- Advanced structures: physically replicated vs. synthetic (swap‑based) ETFs.  
+- Active ETFs are rising but still represent a fraction of the market.

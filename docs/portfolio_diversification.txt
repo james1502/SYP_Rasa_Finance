@@ -1,0 +1,34 @@
+---
+TOPIC: Portfolio Diversification
+CATEGORY: Risk Management
+RELATED_CONCEPTS: Asset Allocation, Risk Tolerance, ETFs, Correlation
+KEYWORDS: diversification, allocation, risk, rebalancing, correlation, Modern Portfolio Theory
+---
+
+# Why Diversification Matters
+
+Diversification means spreading your investments across different assets to reduce risk.
+
+## BEGINNER LEVEL
+Do not put all your eggs in one basket. If you invest in one company and it goes bankrupt, you lose everything. Across 100 companies, one failure is barely noticeable.
+
+## INTERMEDIATE LEVEL
+True diversification goes beyond multiple stocks. You need assets with low correlation:
+- Stocks, bonds, real estate, commodities, cash
+- Geographic diversification: US, international, emerging markets
+- Sector diversification: technology, healthcare, financials, energy
+
+Holding 15 to 20 stocks across different sectors can eliminate most company-specific risk. ETFs provide instant diversification across hundreds of holdings.
+
+Rebalancing annually restores your target allocation and maintains your desired risk level.
+
+## ADVANCED LEVEL
+Modern Portfolio Theory seeks to maximize return for a given risk level by combining uncorrelated assets.
+- Efficient frontier: The set of optimal portfolios offering the best risk-return tradeoff
+- Sharpe ratio: Measures excess return per unit of risk
+- Maximum drawdown: Largest peak-to-trough decline
+- Tail risk: Probability of extreme losses beyond normal volatility
+
+Alternative assets like private equity and hedge funds can improve the efficient frontier but often come with liquidity constraints and higher fees.
+
+Correlation analysis helps identify truly diversified holdings. Assets with correlation below 0.5 provide meaningful diversification benefits.

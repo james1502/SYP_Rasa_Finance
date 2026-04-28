@@ -1,0 +1,39 @@
+---
+TOPIC: Compound Interest
+CATEGORY: Investing Fundamentals
+RELATED_CONCEPTS: Time Value of Money, Saving, Dollar-Cost Averaging, Retirement Planning
+KEYWORDS: compound interest, compounding, rule of 72, principal, interest on interest
+---
+
+The Power of Compound Interest
+
+Compound interest is the interest you earn on both your original money AND on the interest that money has already earned.
+
+BEGINNER LEVEL
+
+Imagine you save $100 and earn 10% interest. After year one, you have $110. In year two, you earn 10% on $110, not just $100 - that gives you $121. That $1 extra is "interest on interest." Over many years, this snowball effect turns small, regular savings into large sums.
+
+Rule of 72: Divide 72 by your annual return to estimate how many years it takes to double your money. Example: 72 divided by 6% equals 12 years to double.
+
+INTERMEDIATE LEVEL
+
+Simple vs. compound interest: Simple interest is calculated only on the principal. Compound interest accelerates growth.
+
+Compounding frequency: Daily, monthly, or yearly compounding affects total returns. More frequent compounding equals slightly higher returns.
+
+Time horizon matters: Starting 10 years earlier can double your final nest egg, even with smaller contributions.
+
+Real-world example: $200/month invested at 7% from age 25 becomes approximately $480,000 by age 65. Start at 35, and it's only approximately $220,000.
+
+
+ADVANCED LEVEL
+
+Continuous compounding: The mathematical limit of increasingly frequent compounding, using the formula A equals P times e to the power of rt.
+
+Impact of taxes and inflation: Real returns after taxes and inflation reduce effective compounding, making tax-advantaged accounts like IRA and 401(k) critical.
+
+Negative compounding (debt): Credit card debt compounds against you, often at 18-25% APR, destroying wealth faster than investments can grow.
+
+Compounding in dividend reinvestment: Reinvesting dividends to buy more shares harnesses compound growth in equity portfolios. DRIPs automate this.
+
+Limitations: Past returns don't guarantee future compounding; sequence-of-return risk can harm compounding in volatile markets.

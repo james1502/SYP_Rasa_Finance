@@ -1,0 +1,31 @@
+﻿---
+TOPIC: Cryptocurrency
+CATEGORY: Alternative Investments
+RELATED_CONCEPTS: Blockchain, Digital Assets, Volatility
+KEYWORDS: Bitcoin, Ethereum, crypto, blockchain, wallet, exchange
+---
+
+# Cryptocurrency Fundamentals
+
+Cryptocurrencies are digital currencies secured by cryptography and operating on decentralized networks.
+
+## BEGINNER LEVEL
+Bitcoin is the first and largest cryptocurrency. It has a capped supply of 21 million coins.
+Ethereum powers smart contracts and decentralized applications.
+To buy crypto, sign up on an exchange like Coinbase or Kraken, verify your identity, link your bank account, and make a purchase.
+Hot wallets are connected to the internet and convenient. Cold wallets are hardware devices and most secure.
+
+## INTERMEDIATE LEVEL
+Blockchain is a distributed and immutable ledger.
+Cryptocurrency is extremely volatile. Bitcoin has seen gains over 1000 percent and crashes of 70 percent or more.
+Only invest 1 to 5 percent of your portfolio in crypto.
+Use dollar cost averaging to reduce risk.
+Stablecoins like USDC and USDT are pegged to the US dollar.
+DeFi offers lending, borrowing, and yield farming without traditional banks.
+
+## ADVANCED LEVEL
+Proof of Work is used by Bitcoin. Proof of Stake is used by Ethereum 2.0 and uses 99 percent less energy.
+Layer 2 solutions include Lightning Network for Bitcoin and Polygon for Ethereum. They provide faster transactions and lower fees.
+Smart contract vulnerabilities have led to billions of dollars in hacks.
+Tokenomics includes circulating supply, total supply, market cap, and fully diluted valuation.
+Every crypto trade is a taxable event. Short term gains are taxed as ordinary income. Long term gains are taxed at capital gains rates.

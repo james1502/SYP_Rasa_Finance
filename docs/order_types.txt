@@ -1,0 +1,27 @@
+---
+TOPIC: Stock Order Types
+CATEGORY: Trading Basics
+RELATED_CONCEPTS: Stocks, ETFs, Brokerage Accounts, Risk Management
+KEYWORDS: market order, limit order, stop order, stop-limit, good-til-cancelled
+---
+
+# Understanding Order Types
+
+When you buy or sell a stock, you give instructions called an "order." The type of order determines the price and timing of execution.
+
+## BEGINNER LEVEL
+- **Market order**: Buys or sells immediately at the current price. Fast, but you may get a slightly different price in a fast-moving market.
+- **Limit order**: Sets a maximum price you'll pay (or minimum you'll sell). Guarantees price, but not execution.
+- Example: A stock trades at $100. You place a limit buy at $98. The order only executes if the price drops to $98 or lower.
+
+## INTERMEDIATE LEVEL
+- **Stop order (stop‑loss)**: Triggers a market order once a certain price is hit. Often used to limit losses.
+- **Stop‑limit order**: Converts to a limit order when the stop price is reached, combining downside protection with price control.
+- **Good‑'til‑cancelled (GTC) vs. day order**: GTC keeps the order alive until filled or cancelled (usually up to 60‑90 days).
+- **All‑or‑none (AON)** and **fill‑or‑kill (FOK)**: AON requires the entire order to fill; FOK requires immediate complete fill or cancellation.
+
+## ADVANCED LEVEL
+- **Hidden/iceberg orders**: Institutional tools to mask large order size.
+- **Slippage**: Difference between expected execution price and actual price, common in volatile or illiquid stocks.
+- **Order routing**: How brokerages direct orders for best execution (smart order routing) vs. payment‑for‑order‑flow (PFOF).
+- **Algorithmic execution**: VWAP, TWAP, and implementation shortfall strategies for minimizing market impact.

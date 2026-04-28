@@ -1,0 +1,32 @@
+---
+TOPIC: Stock Market Indexes
+CATEGORY: Market Basics
+RELATED_CONCEPTS: Stocks, ETFs, Diversification, Benchmarking
+KEYWORDS: S&P 500, Dow Jones, NASDAQ, index, benchmark, tracker
+---
+
+# Understanding Stock Market Indexes
+
+An index tracks the performance of a group of stocks to represent a market or sector.
+
+## BEGINNER LEVEL
+Think of an index as a playlist of songs. The S&P 500 is a playlist of 500 of the largest US companies. When people say "the market was up today," they usually mean one of these playlists rose in value. You can't invest directly in an index, but you can buy an ETF or index fund that copies it.
+
+## INTERMEDIATE LEVEL
+Major US indexes:
+- **S&P 500**: 500 large-cap US companies, weighted by market cap.
+- **Dow Jones Industrial Average (DJIA)**: 30 large US companies, price‑weighted.
+- **NASDAQ Composite**: Over 3,000 stocks, heavily weighted towards technology.
+- **Russell 2000**: Small-cap US stocks.
+
+Weighting methods: price‑weighted (Dow), market‑cap‑weighted (S&P 500), equal‑weighted.
+
+Indexes serve as benchmarks – comparing your portfolio's return against an appropriate index shows how well you're performing.
+
+## ADVANCED LEVEL
+- **Float‑adjusted market‑cap weighting**: Only free‑float shares are counted, excluding locked‑in shares.
+- **Rebalancing and reconstitution**: Indexes periodically add/remove companies, changing sector weights.
+- **Smart‑beta indexes**: Factor‑based (value, momentum, low‑volatility) that attempt to outperform traditional cap‑weighted indexes.
+- **Index construction biases**: Cap‑weighted indexes can become concentrated in a few mega‑cap stocks.
+- **International indexes**: MSCI World, FTSE 100, Nikkei 225, Hang Seng Index.
+- **Limitations**: An index represents the past; it can become overconcentrated in a bubble sector (e.g., tech in 2000).

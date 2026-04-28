@@ -68,6 +68,40 @@ def _get_valid_terms_pattern() -> List[str]:
         'apple', 'tesla', 'microsoft', 'google', 'alphabet', 'amazon', 'meta', 'facebook', 'nvidia', 'netflix', 'amd', 'intel', 'oracle', 'salesforce', 'adobe', 'ibm', 'cisco', 'bitcoin', 'btc', 'ethereum', 'eth', 'binance coin', 'bnb', 'cardano', 'ada', 'solana', 'sol', 'ripple', 'xrp', 'polkadot', 'dot', 'dogecoin', 'doge', 'avalanche', 'avax', 'polygon', 'matic', 'chainlink', 'link', 'litecoin', 'ltc', 'jpmorgan', 'bank of america', 'wells fargo', 'goldman sachs', 'morgan stanley', 'visa', 'mastercard', 'paypal', 'walmart', 'disney', 'coca cola', 'pepsi', 'mcdonalds', 'nike', 'starbucks'
     ]
 
+
+def _is_direct_ticker_mapping(candidate: str) -> bool:
+    """Return True when candidate can be normalized into a known ticker mapping."""
+    if not candidate:
+        return False
+
+    normalized = _clean_ticker(candidate)
+    # _clean_ticker falls back to uppercased input when it cannot map.
+    return normalized != candidate.strip().upper()
+
+
+def _extract_best_entity_candidate(query: str) -> str:
+    """Extract entity candidate robustly for Chinese and English queries."""
+    if not query:
+        return None
+
+    stripped_query = query.strip()
+    if _is_direct_ticker_mapping(stripped_query):
+        return stripped_query
+
+    tokens = tokenize_query(query)
+    noise_words = set(_get_noise_words())
+    cleaned_tokens = [t for t in tokens if t not in noise_words]
+
+    if not cleaned_tokens:
+        return None
+
+    merged_candidates = ["".join(cleaned_tokens), " ".join(cleaned_tokens)]
+    for candidate in merged_candidates + cleaned_tokens:
+        if _is_direct_ticker_mapping(candidate):
+            return candidate
+
+    return cleaned_tokens[0]
+
 # EXTRAc
 
 class ActionExtractSecurityName(Action):
@@ -78,24 +112,7 @@ class ActionExtractSecurityName(Action):
     
     def _extract_company_from_query(self, query: str) -> str:
         """Extract just the company name from a query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query)
-        # Remove noise words
-        noise_words =_get_noise_words()
-
-        cleaned_tokens = [t for t in tokens if t not in noise_words]
-        
-        if not cleaned_tokens:
-            return None
-        
-        # The first non-noise token is likely the company name
-        candidate = cleaned_tokens[0]
-        
-        # If candidate is multi-character Chinese, keep as is.
-        # If it's English, you might want to map to a known name.
-        return candidate
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -208,6 +225,7 @@ class ActionExtractComparisonItems(Action):
         if not text:
             return None
         
+        normalized = text.lower()
         tokens = tokenize_query(text)
         noise_words = set(_get_noise_words())
         
@@ -358,7 +376,27 @@ class ActionExtractComparisonItems(Action):
         # Company name to ticker mapping
 
         
+        index_to_ticker = {
+            's&p 500': '^GSPC',
+            's&p500': '^GSPC',
+            'sp500': '^GSPC',
+            's and p 500': '^GSPC',
+            's&p': '^GSPC',
+            'nasdaq': '^IXIC',
+            'nasdaq composite': '^IXIC',
+            'qqq': '^IXIC',
+            'dow jones': '^DJI',
+            'djia': '^DJI',
+            'russell 2000': '^RUT',
+            'ftse 100': '^FTSE',
+        }
+
         found_tickers = []
+
+        for phrase, ticker in index_to_ticker.items():
+            if phrase in normalized and ticker not in found_tickers:
+                found_tickers.append(ticker)
+
         for token in cleaned_tokens:
             ticker = company_to_ticker.get(token)
             if ticker and ticker not in found_tickers:
@@ -372,6 +410,26 @@ class ActionExtractComparisonItems(Action):
         if len(found_tickers) >= 2:
             return ", ".join(found_tickers[:2])
         
+        return None
+
+    def _extract_comparison_criteria(self, text: str) -> str:
+        """Infer a comparison criterion or timeframe from the user's message."""
+        if not text:
+            return None
+
+        normalized = text.lower()
+
+        if any(keyword in normalized for keyword in ["trend", "trends", "performance", "perform", "how are they doing"]):
+            return "last month"
+        if any(keyword in normalized for keyword in ["ytd", "year to date", "year-to-date", "this year"]):
+            return "year-to-date"
+        if any(keyword in normalized for keyword in ["volatility", "volatile", "risk"]):
+            return "volatility"
+        if any(keyword in normalized for keyword in ["week", "last 7 days", "7 days"]):
+            return "last week"
+        if any(keyword in normalized for keyword in ["month", "last 30 days", "30 days"]):
+            return "last month"
+
         return None
     
     def run(
@@ -387,8 +445,13 @@ class ActionExtractComparisonItems(Action):
         query_to_use = corrected_query if corrected_query else user_message
         
         comparison_items = self._extract_companies_from_text(query_to_use)
-        
-        return [SlotSet("comparison_items", comparison_items)]
+        comparison_criteria = self._extract_comparison_criteria(query_to_use)
+
+        events = [SlotSet("comparison_items", comparison_items)]
+        if comparison_criteria:
+            events.append(SlotSet("comparison_criteria", comparison_criteria))
+
+        return events
 
 class ActionExtractAnalysisCompany(Action):
     """Extract company name for analysis from user message"""
@@ -398,13 +461,7 @@ class ActionExtractAnalysisCompany(Action):
     
     def _extract_company_from_query(self, query: str) -> str:
         """Extract company name from analysis query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query) 
-        noise_words = set(_get_noise_words())
-        cleaned = [t for t in tokens if t not in noise_words]
-        return cleaned[0] if cleaned else None
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -434,13 +491,7 @@ class ActionExtractChartAsset(Action):
     
     def _extract_asset_from_query(self, query: str) -> str:
         """Extract asset name from chart query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query) 
-        noise_words = set(_get_noise_words())
-        cleaned = [t for t in tokens if t not in noise_words]
-        return cleaned[0] if cleaned else None
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -504,15 +555,31 @@ class ActionCorrectTypo(Action):
         
         user_message = tracker.latest_message.get('text', '')
         corrected_message, has_correction = self._correct_text(user_message)
+        logging.getLogger(__name__).info("Typo correction evaluated text=%r", user_message)
+
+        events: List[Dict[Text, Any]] = []
+
+        lowered_message = user_message.lower()
+        suppress_correction_message = any(
+            keyword in lowered_message
+            for keyword in ["compare", " vs ", " versus ", "difference between", "trend", "trends"]
+        )
         
-        if has_correction:
+        if has_correction and not suppress_correction_message:
+            message = f"I understood: '{corrected_message}'"
             dispatcher.utter_message(
-                text=f"I understood: '{corrected_message}'"
+                text=message
             )
-            return [SlotSet("corrected_query", corrected_message)]
+            events.append(SlotSet("corrected_query", corrected_message))
+            return events
+
+        if has_correction:
+            events.append(SlotSet("corrected_query", corrected_message))
+            return events
         
         # No correction needed - store original
-        return [SlotSet("corrected_query", user_message)]    
+        events.append(SlotSet("corrected_query", user_message))
+        return events    
 
 # matketdata (alpha)
 
@@ -553,10 +620,11 @@ class ActionFetchMarketData(Action):
         security_name = tracker.get_slot("security_name")
         print(security_name)
         if not security_name or len(security_name) < 2:
-            dispatcher.utter_message(
-                text="I couldn't identify a valid ticker. Please provide a ticker symbol."
-            )
-            return [SlotSet("security_name", None)]
+            message = "I couldn't identify a valid ticker. Please provide a ticker symbol."
+            return [
+                SlotSet("market_data_output", message),
+                SlotSet("security_name", None)
+            ]
         
         
         cleaned_yahoo = _clean_ticker(security_name)
@@ -1045,8 +1113,8 @@ class ActionFetchComparisonData(Action):
         
         comparison_items = tracker.get_slot("comparison_items")
         comparison_criteria = tracker.get_slot("comparison_criteria")
-        print("1"+comparison_items)
-        print("2"+comparison_criteria)
+        print(f"comparison_items={comparison_items}")
+        print(f"comparison_criteria={comparison_criteria}")
         
         if not comparison_items:
             error_msg = "I need at least two items to compare."
@@ -1404,78 +1472,151 @@ Write a professional, objective summary that highlights the key performance and 
         ]
     
 #chart
-
 class ActionShowChart(Action):
-    """Generate and display charts"""
-    
+    """Generate and display 30-day charts with 20-day SMA and RSI overlay"""
+
     def name(self) -> Text:
         return "action_show_chart"
-
-    def generate_quickchart_url(self, labels: list, data: list, title: str, is_positive: bool) -> str:
-        """Generate QuickChart URL"""
-        color = "rgb(0, 211, 149)" if is_positive else "rgb(255, 107, 107)"
+    
+    def generate_quickchart_url(self, labels: list, prices: list, 
+                                sma: list = None, rsi: list = None,
+                                title: str = "", is_positive: bool = True) -> str:
+        main_color = "rgb(0, 211, 149)" if is_positive else "rgb(255, 107, 107)"
         bg_color = "rgba(0, 211, 149, 0.2)" if is_positive else "rgba(255, 107, 107, 0.2)"
-        
-        chart_config = {
+        sma_color = "rgb(255, 206, 86)"
+        rsi_color = "rgb(100, 149, 237)"
+
+        # Use Chart.js v2 syntax (QuickChart default)
+        config = {
             "type": "line",
             "data": {
                 "labels": labels,
-                "datasets": [{
-                    "label": title,
-                    "data": data,
-                    "borderColor": color,
-                    "backgroundColor": bg_color,
-                    "fill": True,
-                    "lineTension": 0.4,
-                    "pointRadius": 0,
-                    "borderWidth": 2
-                }]
+                "datasets": []
             },
             "options": {
-                "elements": {
-                    "line": {
-                        "tension": 0.4
-                    }
-                },
-                "plugins": {
-                    "legend": {"display": False},
-                    "title": {
-                        "display": True,
-                        "text": title,
-                        "color": "#ffffff",
-                        "font": {"size": 16}
-                    }
-                },
+                "maintainAspectRatio": True,
+                "responsive": True,
+                "legend": {"display": True, "labels": {"fontColor": "#ffffff"}},
+                "title": {"display": True, "text": title, "fontColor": "#ffffff", "fontSize": 16},
                 "scales": {
-                    "x": {
-                        "display": False
-                    },
-                    "y": {
-                        "ticks": {"color": "#aaaaaa"},
-                        "grid": {"color": "rgba(255,255,255,0.1)"}
-                    }
+                    "xAxes": [{
+                        "display": True,
+                        "ticks": {"fontColor": "#aaaaaa", "maxRotation": 45, "minRotation": 45, "autoSkip": True},
+                        "scaleLabel": {"display": True, "labelString": "Date", "fontColor": "#aaaaaa"}
+                    }],
+                    "yAxes": [
+                        {"id": "y-price", "position": "left", "gridLines": {"color": "rgba(255,255,255,0.1)"}, 
+                        "ticks": {"fontColor": "#aaaaaa"}, "scaleLabel": {"display": True, "labelString": "Price ($)", "fontColor": "#aaaaaa"}}
+                    ]
                 }
             }
         }
-        
-        chart_json = json.dumps(chart_config)
+
+        # Price dataset - thicker line (borderWidth 3)
+        config["data"]["datasets"].append({
+            "label": "Price",
+            "data": prices,
+            "borderColor": main_color,
+            "backgroundColor": bg_color,
+            "fill": True,
+            "pointRadius": 0,
+            "borderWidth": 3,   # ← thicker line
+            "yAxisID": "y-price"
+        })
+
+        # SMA dataset
+        if sma and any(v is not None for v in sma):
+            config["data"]["datasets"].append({
+                "label": "20-day SMA",
+                "data": sma,
+                "borderColor": sma_color,
+                "borderWidth": 2,
+                "borderDash": [5, 5],
+                "fill": False,
+                "pointRadius": 2,
+                "pointBackgroundColor": sma_color,
+                "yAxisID": "y-price"
+            })
+
+        # RSI dataset and secondary y-axis
+        if rsi and any(v is not None for v in rsi):
+            config["data"]["datasets"].append({
+                "label": "RSI (14)",
+                "data": rsi,
+                "borderColor": rsi_color,
+                "borderWidth": 2,
+                "fill": False,
+                "pointRadius": 0,
+                "yAxisID": "y-rsi"
+            })
+            config["options"]["scales"]["yAxes"].append({
+                "id": "y-rsi",
+                "position": "right",
+                "gridLines": {"drawOnChartArea": False},
+                "ticks": {"fontColor": "#aaaaaa", "min": 0, "max": 100},
+                "scaleLabel": {"display": True, "labelString": "RSI", "fontColor": "#aaaaaa"}
+            })
+
+        chart_json = json.dumps(config, ensure_ascii=False)
         encoded = urllib.parse.quote(chart_json)
-        return f"https://quickchart.io/chart?c={encoded}&backgroundColor=%231a1a2e&width=500&height=300"
+        # Increased width to 900px for longer line
+        return f"https://quickchart.io/chart?c={encoded}&backgroundColor=%231a1a2e&width=900&height=400"
+
+    def _calculate_sma(self, values: list, window: int = 20) -> list:
+        sma = []
+        for i in range(len(values)):
+            if i < window - 1:
+                sma.append(None)
+            else:
+                avg = sum(values[i - window + 1:i + 1]) / window
+                sma.append(round(avg, 2))
+        return sma
+
+    def _calculate_rsi(self, values: list, window: int = 14) -> list:
+        if len(values) < window + 1:
+            return [None] * len(values)
+        
+        rsi = [None] * len(values)
+        gains = []
+        losses = []
+        
+        for i in range(1, len(values)):
+            change = values[i] - values[i-1]
+            gains.append(max(change, 0))
+            losses.append(max(-change, 0))
+        
+        avg_gain = sum(gains[:window]) / window
+        avg_loss = sum(losses[:window]) / window
+        
+        for i in range(window, len(values)):
+            if i > window:
+                avg_gain = (avg_gain * (window - 1) + gains[i-1]) / window
+                avg_loss = (avg_loss * (window - 1) + losses[i-1]) / window
+            
+            if avg_loss == 0:
+                rsi[i] = 100.0
+            else:
+                rs = avg_gain / avg_loss
+                rsi[i] = round(100 - (100 / (1 + rs)), 2)
+        
+        return rsi
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        
         chart_asset = tracker.get_slot("chart_asset")
-        print(chart_asset)
+        print(f"Chart requested for: {chart_asset}")
 
         if not chart_asset:
-            dispatcher.utter_message(text="📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'")
-            return []
-        
+            message = "📊 Which asset would you like to see a 30-day chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'"
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", ""),
+                FollowupAction("utter_chart_results")
+            ]
+
         asset_lower = chart_asset.lower()
-        
-        # Define mappings
+
         crypto_map = {
             "bitcoin": "bitcoin", "btc": "bitcoin",
             "ethereum": "ethereum", "eth": "ethereum",
@@ -1493,7 +1634,7 @@ class ActionShowChart(Action):
             "polkadot": "polkadot", "dot": "polkadot",
             "litecoin": "litecoin", "ltc": "litecoin"
         }
-        
+
         index_map = {
             "sp500": "SPY", "s&p 500": "SPY", "s&p": "SPY", "s and p 500": "SPY",
             "nasdaq": "QQQ",
@@ -1501,124 +1642,140 @@ class ActionShowChart(Action):
             "ftse100": "EWU", "ftse": "EWU",
             "nikkei": "EWJ"
         }
-        
-        # Check if it's a crypto
+
         if asset_lower in crypto_map or asset_lower in crypto_map.values():
             coin_id = crypto_map.get(asset_lower, asset_lower)
-            return self.show_crypto_chart(dispatcher, coin_id)
-        
-        # Check if it's an index
+            return self.show_crypto_chart(dispatcher, tracker, coin_id)
         elif asset_lower in index_map:
             symbol = index_map.get(asset_lower)
-            return self.show_index_chart(dispatcher, asset_lower, symbol)
-        
-        # Otherwise treat as stock ticker
+            return self.show_index_chart(dispatcher, tracker, asset_lower, symbol)
         else:
             ticker_symbol = _clean_ticker(chart_asset)
-            return self.show_stock_chart(dispatcher, ticker_symbol)
-    
-    def show_crypto_chart(self, dispatcher: CollectingDispatcher, coin_id: str) -> List[Dict[Text, Any]]:
-        """Generate chart for cryptocurrency"""
-        try:
-            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=7"
-            response = requests.get(url, timeout=15)
-            data = response.json()
-            
-            if "prices" not in data:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {coin_id}.")
-                return []
-            
-            prices = data["prices"]
-            
-            # Sample data points
-            sampled = prices[::len(prices)//30] if len(prices) > 30 else prices
-            
-            labels = [datetime.fromtimestamp(p[0]/1000).strftime("%m/%d %H:%M") for p in sampled]
-            values = [round(p[1], 2) for p in sampled]
-            
-            current_price = prices[-1][1]
-            first_price = prices[0][1]
-            price_change = ((current_price - first_price) / first_price) * 100
-            is_positive = price_change >= 0
-            
-            chart_url = self.generate_quickchart_url(labels, values, f"{coin_id.title()} - 7 Day", is_positive)
-            
-            emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {coin_id.title()} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
-            
-        except Exception as e:
-            print(f"Error generating crypto chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {coin_id}.")
-        
-        return []
-    
-    def show_stock_chart(self, dispatcher: CollectingDispatcher, ticker_symbol: str) -> List[Dict[Text, Any]]:
-        """Generate chart for stock using yfinance"""
+            return self.show_stock_chart(dispatcher, tracker, ticker_symbol)
+
+    def show_stock_chart(self, dispatcher, tracker, ticker_symbol):
         try:
             ticker = yf.Ticker(ticker_symbol)
-            hist = ticker.history(period="7d")
-            
+            hist = ticker.history(period="60d")
             if hist.empty:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {ticker_symbol}.")
-                return []
+                raise ValueError("No data")
             
-            labels = [date.strftime("%m/%d") for date in hist.index]
-            values = [round(price, 2) for price in hist['Close'].values]
+            full_labels = [date.strftime("%m/%d") for date in hist.index]
+            full_prices = [round(price, 2) for price in hist['Close'].values]
+
+            # Calculate indicators on the full 60-day series
+            full_sma = self._calculate_sma(full_prices, window=20)
+            full_rsi = self._calculate_rsi(full_prices, window=14)
+
+            # Take only the last 30 days for display
+            display_days = 30
+            labels = full_labels[-display_days:]
+            prices = full_prices[-display_days:]
+            sma = full_sma[-display_days:]     # will have values from day 1
+            rsi = full_rsi[-display_days:]     # will have values from day 1
             
-            current_price = values[-1]
-            first_price = values[0]
+            current_price = prices[-1]
+            first_price = prices[0]
             price_change = ((current_price - first_price) / first_price) * 100
             is_positive = price_change >= 0
-            
-            chart_url = self.generate_quickchart_url(labels, values, f"{ticker_symbol} - 7 Day", is_positive)
-            
+
+            chart_url = self.generate_quickchart_url(labels, prices, sma, rsi,
+                                                     f"{ticker_symbol} - 30 Day", is_positive)
+
             emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {ticker_symbol} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
-            
+            last_rsi = rsi[-1] if rsi[-1] is not None else "N/A"
+            message = (f"{emoji} {ticker_symbol} - 30 Day Chart\n"
+                       f"Current: ${current_price:,.2f}\n"
+                       f"30d Change: {price_change:+.2f}%\n"
+                       f"20d SMA: ${sma[-1]:,.2f}  |  RSI(14): {last_rsi}")
+            return [SlotSet("chart_output", message), SlotSet("chart_image_url", chart_url), FollowupAction("utter_chart_results")]
         except Exception as e:
-            print(f"Error generating stock chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {ticker_symbol}.")
-        
-        return []
-    
-    def show_index_chart(self, dispatcher: CollectingDispatcher, index_name: str, symbol: str) -> List[Dict[Text, Any]]:
-        """Generate chart for market index"""
+            print(f"Stock chart error: {e}")
+            return [SlotSet("chart_output", f"Error generating chart for {ticker_symbol}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
+
+    def show_crypto_chart(self, dispatcher, tracker, coin_id):
+        try:
+            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=60"
+            response = requests.get(url, timeout=15)
+            data = response.json()
+            if "prices" not in data:
+                raise ValueError("No price data")
+            prices_raw = data["prices"]
+
+            full_prices = [round(p[1], 2) for p in prices_raw]
+            full_labels = [datetime.fromtimestamp(p[0]/1000).strftime("%m/%d") for p in prices_raw]
+
+            # Calculate indicators on the full 60-day series
+            full_sma = self._calculate_sma(full_prices, window=20)
+            full_rsi = self._calculate_rsi(full_prices, window=14)
+
+            # Take only the last 30 days for display
+            display_days = 30
+            labels = full_labels[-display_days:]
+            prices = full_prices[-display_days:]
+            sma = full_sma[-display_days:]     # will have values from day 1
+            rsi = full_rsi[-display_days:]     # will have values from day 1
+            
+
+            current_price = prices_raw[-1][1]
+            first_price = prices_raw[0][1]
+            price_change = ((current_price - first_price) / first_price) * 100
+            is_positive = price_change >= 0
+
+            chart_url = self.generate_quickchart_url(labels, prices, sma, rsi,
+                                                     f"{coin_id.title()} - 30 Day", is_positive)
+
+            emoji = "📈" if is_positive else "📉"
+            last_rsi = rsi[-1] if rsi[-1] is not None else "N/A"
+            message = (f"{emoji} {coin_id.title()} - 30 Day Chart\n"
+                       f"Current: ${current_price:,.2f}\n"
+                       f"30d Change: {price_change:+.2f}%\n"
+                       f"20d SMA: ${sma[-1]:,.2f}  |  RSI(14): {last_rsi}")
+            return [SlotSet("chart_output", message), SlotSet("chart_image_url", chart_url), FollowupAction("utter_chart_results")]
+        except Exception as e:
+            print(f"Crypto chart error: {e}")
+            return [SlotSet("chart_output", f"Error generating chart for {coin_id}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
+
+    def show_index_chart(self, dispatcher, tracker, index_name, symbol):
         try:
             ticker = yf.Ticker(symbol)
-            hist = ticker.history(period="7d")
-            
+            hist = ticker.history(period="60d")
             if hist.empty:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {index_name}.")
-                return []
+                raise ValueError("No data")
+            full_labels = [date.strftime("%m/%d") for date in hist.index]
+            full_prices = [round(price, 2) for price in hist['Close'].values]
+
+            # Calculate indicators on the full 60-day series
+            full_sma = self._calculate_sma(full_prices, window=20)
+            full_rsi = self._calculate_rsi(full_prices, window=14)
+
+            # Take only the last 30 days for display
+            display_days = 30
+            labels = full_labels[-display_days:]
+            prices = full_prices[-display_days:]
+            sma = full_sma[-display_days:]     # will have values from day 1
+            rsi = full_rsi[-display_days:]     # will have values from day 1
             
-            labels = [date.strftime("%m/%d") for date in hist.index]
-            values = [round(price, 2) for price in hist['Close'].values]
-            
-            current_price = values[-1]
-            first_price = values[0]
+
+            current_price = prices[-1]
+            first_price = prices[0]
             price_change = ((current_price - first_price) / first_price) * 100
             is_positive = price_change >= 0
-            
+
             display_name = index_name.upper().replace("SP500", "S&P 500").replace("DOW", "Dow Jones")
-            chart_url = self.generate_quickchart_url(labels, values, f"{display_name} - 7 Day", is_positive)
-            
+            chart_url = self.generate_quickchart_url(labels, prices, sma, rsi,
+                                                     f"{display_name} - 30 Day", is_positive)
+
             emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {display_name} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
-            
+            last_rsi = rsi[-1] if rsi[-1] is not None else "N/A"
+            message = (f"{emoji} {display_name} - 30 Day Chart\n"
+                       f"Current: ${current_price:,.2f}\n"
+                       f"30d Change: {price_change:+.2f}%\n"
+                       f"20d SMA: ${sma[-1]:,.2f}  |  RSI(14): {last_rsi}")
+            return [SlotSet("chart_output", message), SlotSet("chart_image_url", chart_url), FollowupAction("utter_chart_results")]
         except Exception as e:
-            print(f"Error generating index chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {index_name}.")
-        
-        return []
+            print(f"Index chart error: {e}")
+            return [SlotSet("chart_output", f"Error generating chart for {index_name}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
 
 
 #yahoo (T&S cinese) #check
@@ -1761,10 +1918,35 @@ def _clean_ticker(item: str) -> str:
         '耐克': 'NKE',           
         'starbucks': 'SBUX',
         '星巴克': 'SBUX',        
+
+        # Market indices
+        's&p 500': '^GSPC',
+        's&p500': '^GSPC',
+        'sp500': '^GSPC',
+        's and p 500': '^GSPC',
+        's&p': '^GSPC',
+        'nasdaq': '^IXIC',
+        'nasdaq composite': '^IXIC',
+        'dow jones': '^DJI',
+        'djia': '^DJI',
+        'russell 2000': '^RUT',
+        'ftse 100': '^FTSE',
     }
     
     item_lower = item.strip().lower()  # .lower() affects only English letters
-    return company_to_ticker.get(item_lower, item.strip().upper())
+
+    # Exact match first.
+    direct = company_to_ticker.get(item_lower)
+    if direct:
+        return direct
+
+    # Fallback for phrase-like inputs (e.g., "bitcoin price", "比特幣價格").
+    # Prefer longer keys so specific phrases win over short tokens.
+    for key in sorted(company_to_ticker.keys(), key=len, reverse=True):
+        if key and key in item_lower:
+            return company_to_ticker[key]
+
+    return item.strip().upper()
 
 #check
 def to_alpha_vantage_format(item: str) -> str:
@@ -2038,8 +2220,14 @@ class ActionSaveTransaction(Action):
             
             # Validate
             if not all([transaction_type, transaction_shares, transaction_asset, transaction_date]):
-                dispatcher.utter_message(text="❌ Missing required transaction information.")
-                return []
+                message = "❌ Missing required transaction information."
+                return [
+                    SlotSet("transaction_result_output", message),
+                    SlotSet("transaction_type", None),
+                    SlotSet("transaction_shares", None),
+                    SlotSet("transaction_asset", None),
+                    SlotSet("transaction_date", None)
+                ]
             
             # Convert to ticker
             ticker = _clean_ticker(transaction_asset)
@@ -2055,11 +2243,12 @@ class ActionSaveTransaction(Action):
             print(f"DEBUG: Historical price = {historical_price}")
             
             if historical_price == 0.0:
-                dispatcher.utter_message(
-                    text=f"❌ Could not fetch historical price for {ticker} on {parsed_date}. "
-                        f"Please verify the date and ticker symbol."
+                message = (
+                    f"❌ Could not fetch historical price for {ticker} on {parsed_date}. "
+                    f"Please verify the date and ticker symbol."
                 )
                 return [
+                    SlotSet("transaction_result_output", message),
                     SlotSet("transaction_type", None),
                     SlotSet("transaction_shares", None),
                     SlotSet("transaction_asset", None),
@@ -2082,18 +2271,18 @@ class ActionSaveTransaction(Action):
             print(f"DEBUG: Saving transaction to MongoDB")
             transaction_id = mongo_db.save_transaction(transaction_data)
             print(f"DEBUG: Transaction saved with ID = {transaction_id}")
-            
-            dispatcher.utter_message(
-                text=f"✅ **Transaction Recorded!**\n\n"
-                    f"Type: {transaction_type.upper()}\n"
-                    f"Asset: {ticker}\n"
-                    f"Shares: {transaction_shares}\n"
-                    f"Price on {parsed_date}: ${historical_price:.2f}\n"
-                    f"Date: {parsed_date}\n"
-                    f"Total Value: ${total_value:.2f}"
+            message = (
+                f"✅ **Transaction Recorded!**\n\n"
+                f"Type: {transaction_type.upper()}\n"
+                f"Asset: {ticker}\n"
+                f"Shares: {transaction_shares}\n"
+                f"Price on {parsed_date}: ${historical_price:.2f}\n"
+                f"Date: {parsed_date}\n"
+                f"Total Value: ${total_value:.2f}"
             )
             
             return [
+                SlotSet("transaction_result_output", message),
                 SlotSet("transaction_type", None),
                 SlotSet("transaction_shares", None),
                 SlotSet("transaction_asset", None),
@@ -2104,8 +2293,14 @@ class ActionSaveTransaction(Action):
             print(f"ERROR in ActionSaveTransaction: {str(e)}")
             import traceback
             traceback.print_exc()
-            dispatcher.utter_message(text=f"❌ Error processing transaction: {str(e)}")
-            return []
+            message = f"❌ Error processing transaction: {str(e)}"
+            return [
+                SlotSet("transaction_result_output", message),
+                SlotSet("transaction_type", None),
+                SlotSet("transaction_shares", None),
+                SlotSet("transaction_asset", None),
+                SlotSet("transaction_date", None)
+            ]
 
 #get transaction
 class ActionGetTransactions(Action):
@@ -2167,11 +2362,11 @@ class ActionGetTransactions(Action):
         transactions = mongo_db.get_all_transactions()
         
         if not transactions:
-            dispatcher.utter_message(
-                text="📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\n"
-                     "Start by recording a buy or sell transaction!"
-            )
-            return []
+            message = "📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\nStart by recording a buy or sell transaction!"
+            return [
+                SlotSet("portfolio_output", message),
+                FollowupAction("utter_portfolio_results")
+            ]
         
         # Calculate positions
         positions = self._calculate_positions(transactions)
@@ -2219,9 +2414,11 @@ class ActionGetTransactions(Action):
         message += f"Total Cost: ${total_cost:.2f}\n"
         message += f"Total P&L: ${total_pnl:+.2f} ({total_pnl_percent:+.2f}%) {summary_emoji}\n"
         message += f"Transactions: {len(transactions)}"
-        
-        dispatcher.utter_message(text=message)
-        return []
+
+        return [
+            SlotSet("portfolio_output", message),
+            FollowupAction("utter_portfolio_results")
+        ]
 
 #
 class ActionGetTransactionsByAsset(Action):
@@ -2240,8 +2437,12 @@ class ActionGetTransactionsByAsset(Action):
         filter_asset = tracker.get_slot("filter_asset")
         
         if not filter_asset:
-            dispatcher.utter_message(text="Please specify which asset to filter by.")
-            return []
+            message = "Please specify which asset to filter by."
+            return [
+                SlotSet("asset_transactions_output", message),
+                SlotSet("filter_asset", None),
+                FollowupAction("utter_asset_transactions_results")
+            ]
         
         # Convert to ticker
         ticker = _clean_ticker(filter_asset)
@@ -2250,8 +2451,12 @@ class ActionGetTransactionsByAsset(Action):
         transactions = mongo_db.get_transactions_by_asset(ticker)
         
         if not transactions:
-            dispatcher.utter_message(text=f"No transactions found for {ticker}.")
-            return [SlotSet("filter_asset", None)]
+            message = f"No transactions found for {ticker}."
+            return [
+                SlotSet("asset_transactions_output", message),
+                SlotSet("filter_asset", None),
+                FollowupAction("utter_asset_transactions_results")
+            ]
         
         # Calculate position
         total_shares = 0
@@ -2306,6 +2511,9 @@ class ActionGetTransactionsByAsset(Action):
         pnl_emoji = "📈" if pnl >= 0 else "📉"
         message += f"P&L: ${pnl:+.2f} ({pnl_percent:+.2f}%) {pnl_emoji}\n\n"
         message += f"Transactions: {buy_count} buys, {sell_count} sells"
-        
-        dispatcher.utter_message(text=message)
-        return [SlotSet("filter_asset", None)]
+
+        return [
+            SlotSet("asset_transactions_output", message),
+            SlotSet("filter_asset", None),
+            FollowupAction("utter_asset_transactions_results")
+        ]
