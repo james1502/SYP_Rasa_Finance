@@ -74,6 +74,16 @@ slots:
       mappings:
         - type: from_llm
 
+  chart_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  chart_image_url:
+    type: text
+    mappings:
+      - type: controlled
+
   #mid term
   # Transaction recording slots
   
@@ -108,6 +118,21 @@ slots:
     mappings:
       - type: from_llm
 
+  transaction_result_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  portfolio_output:
+    type: text
+    mappings:
+      - type: controlled
+
+  asset_transactions_output:
+    type: text
+    mappings:
+      - type: controlled
+
 
 actions:
   - action_fetch_market_data
@@ -118,7 +143,7 @@ actions:
   - validate_comparison_items
   - action_fetch_analysis
   - action_show_chart
-#extract
+  #extract
   - action_extract_security_name
   - action_extract_index_name
   - action_extract_news_topic
@@ -243,6 +268,12 @@ responses:
       metadata:
         rephrase: true
 
+  utter_chart_results:
+    - text: "{chart_output}"
+      image: "{chart_image_url}"
+      metadata:
+        rephrase: true
+
   utter_ask_transaction_type:
     - text: "What type of transaction would you like to record? (buy, sell, deposit, or withdrawal)"
       metadata:
@@ -270,7 +301,7 @@ responses:
 
 
   utter_transaction_saved:
-    - text: "✅ Transaction successfully recorded! Your portfolio has been updated."
+    - text: "{transaction_result_output}"
       metadata:
         rephrase: true
 
@@ -282,6 +313,16 @@ responses:
 
   utter_portfolio_empty:
     - text: "📊 You don't have any transactions recorded yet. Start by recording a buy or sell transaction!"
+      metadata:
+        rephrase: true
+
+  utter_portfolio_results:
+    - text: "{portfolio_output}"
+      metadata:
+        rephrase: true
+
+  utter_asset_transactions_results:
+    - text: "{asset_transactions_output}"
       metadata:
         rephrase: true
 

@@ -1,0 +1,44 @@
+---
+TOPIC: ESG & Sustainable Investing
+CATEGORY: Investment Approaches
+RELATED_CONCEPTS: Stocks, ETFs, Portfolio Construction, Risk
+KEYWORDS: ESG, sustainable, SRI, impact, greenwashing, environmental, social, governance
+---
+
+ESG and Sustainable Investing
+
+ESG investing considers Environmental, Social, and Governance factors alongside financial returns.
+
+BEGINNER LEVEL
+
+Environmental: How a company handles climate change, pollution, and resource use.
+
+Social: Employee treatment, human rights, community impact.
+
+Governance: Executive pay, board diversity, shareholder rights.
+
+ESG investing is like choosing a restaurant not just for taste but also for how it treats its staff and sources ingredients.
+
+INTERMEDIATE LEVEL
+
+Screening: Negative screening excludes "sin stocks" like tobacco and weapons; positive screening seeks best-in-class ESG performers.
+
+ESG ratings from agencies like MSCI and Sustainalytics are inconsistent - different agencies grade the same company differently.
+
+Green bonds: Debt issued to fund specific environmental projects.
+
+Performance: Historically, ESG funds have shown competitive returns with potentially lower downside risk.
+
+Shareholder engagement: Using your ownership stake to influence company behaviour through proxy voting and resolutions.
+
+ADVANCED LEVEL
+
+Materiality: Not all ESG issues matter financially for every industry. Water usage matters more for beverage companies than for software firms.
+
+Impact measurement: Quantifying real-world outcomes like tonnes of CO2 avoided remains challenging.
+
+Greenwashing: Companies or funds overstate their ESG credentials. Scrutinise holdings and methodology.
+
+Fiduciary duty and ESG: Debate over whether pension trustees can legally consider ESG if it "sacrifices" returns, though regulation is evolving.
+
+Integration into valuation: Adjust discount rates or cash flows for ESG risks like carbon taxes and regulation.

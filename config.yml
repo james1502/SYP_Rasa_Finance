@@ -1,8 +1,8 @@
 recipe: default.v1
 language: en
 additional_languages:
-  - zh-TW  #Traditional  Chinese
-  - zh-CN  # Simplified Chinese
+  - zh-TW
+  - zh-CN
 
 pipeline:
   - name: SearchReadyLLMCommandGenerator
@@ -10,7 +10,8 @@ pipeline:
       model_group: ollama_llm
     #prompt_template: prompts/command-generator.jinja2
     flow_retrieval:
-      active: false
+      embeddings:
+        model_group: hf_emb
     max_retries: 3
     retry_delay: 1.0
 
@@ -24,8 +25,5 @@ policies:
     vector_store:
       type: "faiss"
       source: "./docs"
-      debug: true
-    top_k: 5
-    use_generative_llm: true
-    prompt_template: prompts//enterprise-search-policy-template.jinja2
+    prompt_template: prompts/enterprise-search-policy-template.jinja2
 assistant_id: 20251127-124921-unsorted-bardolino

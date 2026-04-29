@@ -32,6 +32,27 @@ def tokenize_query(query: str) -> list:
     else:
         # English or other space-separated languages
         return query.lower().split()
+
+
+def detect_user_language(text: str) -> str:
+    """Detect user language as en, zh-TW, or zh-CN from current input text."""
+    if not text:
+        return "en"
+
+    if not re.search(r"[\u4e00-\u9fff]", text):
+        return "en"
+
+    # Heuristic script hints for Traditional vs Simplified Chinese.
+    traditional_hints = "繁體臺萬與為國龍這個嗎麼" 
+    simplified_hints = "简体台万与为国龙这个吗么" 
+
+    trad_score = sum(ch in traditional_hints for ch in text)
+    simp_score = sum(ch in simplified_hints for ch in text)
+
+    if simp_score > trad_score:
+        return "zh-CN"
+
+    return "zh-TW"
     
 #pattern
 
@@ -68,6 +89,40 @@ def _get_valid_terms_pattern() -> List[str]:
         'apple', 'tesla', 'microsoft', 'google', 'alphabet', 'amazon', 'meta', 'facebook', 'nvidia', 'netflix', 'amd', 'intel', 'oracle', 'salesforce', 'adobe', 'ibm', 'cisco', 'bitcoin', 'btc', 'ethereum', 'eth', 'binance coin', 'bnb', 'cardano', 'ada', 'solana', 'sol', 'ripple', 'xrp', 'polkadot', 'dot', 'dogecoin', 'doge', 'avalanche', 'avax', 'polygon', 'matic', 'chainlink', 'link', 'litecoin', 'ltc', 'jpmorgan', 'bank of america', 'wells fargo', 'goldman sachs', 'morgan stanley', 'visa', 'mastercard', 'paypal', 'walmart', 'disney', 'coca cola', 'pepsi', 'mcdonalds', 'nike', 'starbucks'
     ]
 
+
+def _is_direct_ticker_mapping(candidate: str) -> bool:
+    """Return True when candidate can be normalized into a known ticker mapping."""
+    if not candidate:
+        return False
+
+    normalized = _clean_ticker(candidate)
+    # _clean_ticker falls back to uppercased input when it cannot map.
+    return normalized != candidate.strip().upper()
+
+
+def _extract_best_entity_candidate(query: str) -> str:
+    """Extract entity candidate robustly for Chinese and English queries."""
+    if not query:
+        return None
+
+    stripped_query = query.strip()
+    if _is_direct_ticker_mapping(stripped_query):
+        return stripped_query
+
+    tokens = tokenize_query(query)
+    noise_words = set(_get_noise_words())
+    cleaned_tokens = [t for t in tokens if t not in noise_words]
+
+    if not cleaned_tokens:
+        return None
+
+    merged_candidates = ["".join(cleaned_tokens), " ".join(cleaned_tokens)]
+    for candidate in merged_candidates + cleaned_tokens:
+        if _is_direct_ticker_mapping(candidate):
+            return candidate
+
+    return cleaned_tokens[0]
+
 # EXTRAc
 
 class ActionExtractSecurityName(Action):
@@ -78,24 +133,7 @@ class ActionExtractSecurityName(Action):
     
     def _extract_company_from_query(self, query: str) -> str:
         """Extract just the company name from a query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query)
-        # Remove noise words
-        noise_words =_get_noise_words()
-
-        cleaned_tokens = [t for t in tokens if t not in noise_words]
-        
-        if not cleaned_tokens:
-            return None
-        
-        # The first non-noise token is likely the company name
-        candidate = cleaned_tokens[0]
-        
-        # If candidate is multi-character Chinese, keep as is.
-        # If it's English, you might want to map to a known name.
-        return candidate
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -208,6 +246,7 @@ class ActionExtractComparisonItems(Action):
         if not text:
             return None
         
+        normalized = text.lower()
         tokens = tokenize_query(text)
         noise_words = set(_get_noise_words())
         
@@ -358,7 +397,27 @@ class ActionExtractComparisonItems(Action):
         # Company name to ticker mapping
 
         
+        index_to_ticker = {
+            's&p 500': '^GSPC',
+            's&p500': '^GSPC',
+            'sp500': '^GSPC',
+            's and p 500': '^GSPC',
+            's&p': '^GSPC',
+            'nasdaq': '^IXIC',
+            'nasdaq composite': '^IXIC',
+            'qqq': '^IXIC',
+            'dow jones': '^DJI',
+            'djia': '^DJI',
+            'russell 2000': '^RUT',
+            'ftse 100': '^FTSE',
+        }
+
         found_tickers = []
+
+        for phrase, ticker in index_to_ticker.items():
+            if phrase in normalized and ticker not in found_tickers:
+                found_tickers.append(ticker)
+
         for token in cleaned_tokens:
             ticker = company_to_ticker.get(token)
             if ticker and ticker not in found_tickers:
@@ -372,6 +431,26 @@ class ActionExtractComparisonItems(Action):
         if len(found_tickers) >= 2:
             return ", ".join(found_tickers[:2])
         
+        return None
+
+    def _extract_comparison_criteria(self, text: str) -> str:
+        """Infer a comparison criterion or timeframe from the user's message."""
+        if not text:
+            return None
+
+        normalized = text.lower()
+
+        if any(keyword in normalized for keyword in ["trend", "trends", "performance", "perform", "how are they doing"]):
+            return "last month"
+        if any(keyword in normalized for keyword in ["ytd", "year to date", "year-to-date", "this year"]):
+            return "year-to-date"
+        if any(keyword in normalized for keyword in ["volatility", "volatile", "risk"]):
+            return "volatility"
+        if any(keyword in normalized for keyword in ["week", "last 7 days", "7 days"]):
+            return "last week"
+        if any(keyword in normalized for keyword in ["month", "last 30 days", "30 days"]):
+            return "last month"
+
         return None
     
     def run(
@@ -387,8 +466,13 @@ class ActionExtractComparisonItems(Action):
         query_to_use = corrected_query if corrected_query else user_message
         
         comparison_items = self._extract_companies_from_text(query_to_use)
-        
-        return [SlotSet("comparison_items", comparison_items)]
+        comparison_criteria = self._extract_comparison_criteria(query_to_use)
+
+        events = [SlotSet("comparison_items", comparison_items)]
+        if comparison_criteria:
+            events.append(SlotSet("comparison_criteria", comparison_criteria))
+
+        return events
 
 class ActionExtractAnalysisCompany(Action):
     """Extract company name for analysis from user message"""
@@ -398,13 +482,7 @@ class ActionExtractAnalysisCompany(Action):
     
     def _extract_company_from_query(self, query: str) -> str:
         """Extract company name from analysis query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query) 
-        noise_words = set(_get_noise_words())
-        cleaned = [t for t in tokens if t not in noise_words]
-        return cleaned[0] if cleaned else None
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -434,13 +512,7 @@ class ActionExtractChartAsset(Action):
     
     def _extract_asset_from_query(self, query: str) -> str:
         """Extract asset name from chart query"""
-        if not query:
-            return None
-        
-        tokens = tokenize_query(query) 
-        noise_words = set(_get_noise_words())
-        cleaned = [t for t in tokens if t not in noise_words]
-        return cleaned[0] if cleaned else None
+        return _extract_best_entity_candidate(query)
     
     def run(
         self,
@@ -503,16 +575,36 @@ class ActionCorrectTypo(Action):
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
+        detected_language = detect_user_language(user_message)
         corrected_message, has_correction = self._correct_text(user_message)
+        logging.getLogger(__name__).info("Typo correction evaluated text=%r", user_message)
+
+        events: List[Dict[Text, Any]] = []
+
+        lowered_message = user_message.lower()
+        suppress_correction_message = any(
+            keyword in lowered_message
+            for keyword in ["compare", " vs ", " versus ", "difference between", "trend", "trends"]
+        )
         
-        if has_correction:
+        if has_correction and not suppress_correction_message:
+            message = f"I understood: '{corrected_message}'"
             dispatcher.utter_message(
-                text=f"I understood: '{corrected_message}'"
+                text=message
             )
-            return [SlotSet("corrected_query", corrected_message)]
+            events.append(SlotSet("corrected_query", corrected_message))
+            events.append(SlotSet("language", detected_language))
+            return events
+
+        if has_correction:
+            events.append(SlotSet("corrected_query", corrected_message))
+            events.append(SlotSet("language", detected_language))
+            return events
         
         # No correction needed - store original
-        return [SlotSet("corrected_query", user_message)]    
+        events.append(SlotSet("corrected_query", user_message))
+        events.append(SlotSet("language", detected_language))
+        return events    
 
 # matketdata (alpha)
 
@@ -553,10 +645,11 @@ class ActionFetchMarketData(Action):
         security_name = tracker.get_slot("security_name")
         print(security_name)
         if not security_name or len(security_name) < 2:
-            dispatcher.utter_message(
-                text="I couldn't identify a valid ticker. Please provide a ticker symbol."
-            )
-            return [SlotSet("security_name", None)]
+            message = "I couldn't identify a valid ticker. Please provide a ticker symbol."
+            return [
+                SlotSet("market_data_output", message),
+                SlotSet("security_name", None)
+            ]
         
         
         cleaned_yahoo = _clean_ticker(security_name)
@@ -1045,8 +1138,8 @@ class ActionFetchComparisonData(Action):
         
         comparison_items = tracker.get_slot("comparison_items")
         comparison_criteria = tracker.get_slot("comparison_criteria")
-        print("1"+comparison_items)
-        print("2"+comparison_criteria)
+        print(f"comparison_items={comparison_items}")
+        print(f"comparison_criteria={comparison_criteria}")
         
         if not comparison_items:
             error_msg = "I need at least two items to compare."
@@ -1470,8 +1563,12 @@ class ActionShowChart(Action):
         print(chart_asset)
 
         if not chart_asset:
-            dispatcher.utter_message(text="📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'")
-            return []
+            message = "📊 Which asset would you like to see a chart for? Try: 'Bitcoin chart', 'Apple chart', or 'S&P 500 chart'"
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", ""),
+                FollowupAction("utter_chart_results")
+            ]
         
         asset_lower = chart_asset.lower()
         
@@ -1525,8 +1622,12 @@ class ActionShowChart(Action):
             data = response.json()
             
             if "prices" not in data:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {coin_id}.")
-                return []
+                message = f"📊 Couldn't fetch data for {coin_id}."
+                return [
+                    SlotSet("chart_output", message),
+                    SlotSet("chart_image_url", ""),
+                    FollowupAction("utter_chart_results")
+                ]
             
             prices = data["prices"]
             
@@ -1544,16 +1645,21 @@ class ActionShowChart(Action):
             chart_url = self.generate_quickchart_url(labels, values, f"{coin_id.title()} - 7 Day", is_positive)
             
             emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {coin_id.title()} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
+            message = f"{emoji} {coin_id.title()} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%"
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", chart_url),
+                FollowupAction("utter_chart_results")
+            ]
             
         except Exception as e:
             print(f"Error generating crypto chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {coin_id}.")
-        
-        return []
+            message = f"📊 Error generating chart for {coin_id}."
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", ""),
+                FollowupAction("utter_chart_results")
+            ]
     
     def show_stock_chart(self, dispatcher: CollectingDispatcher, ticker_symbol: str) -> List[Dict[Text, Any]]:
         """Generate chart for stock using yfinance"""
@@ -1562,8 +1668,12 @@ class ActionShowChart(Action):
             hist = ticker.history(period="7d")
             
             if hist.empty:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {ticker_symbol}.")
-                return []
+                message = f"📊 Couldn't fetch data for {ticker_symbol}."
+                return [
+                    SlotSet("chart_output", message),
+                    SlotSet("chart_image_url", ""),
+                    FollowupAction("utter_chart_results")
+                ]
             
             labels = [date.strftime("%m/%d") for date in hist.index]
             values = [round(price, 2) for price in hist['Close'].values]
@@ -1576,16 +1686,21 @@ class ActionShowChart(Action):
             chart_url = self.generate_quickchart_url(labels, values, f"{ticker_symbol} - 7 Day", is_positive)
             
             emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {ticker_symbol} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
+            message = f"{emoji} {ticker_symbol} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%"
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", chart_url),
+                FollowupAction("utter_chart_results")
+            ]
             
         except Exception as e:
             print(f"Error generating stock chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {ticker_symbol}.")
-        
-        return []
+            message = f"📊 Error generating chart for {ticker_symbol}."
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", ""),
+                FollowupAction("utter_chart_results")
+            ]
     
     def show_index_chart(self, dispatcher: CollectingDispatcher, index_name: str, symbol: str) -> List[Dict[Text, Any]]:
         """Generate chart for market index"""
@@ -1594,8 +1709,12 @@ class ActionShowChart(Action):
             hist = ticker.history(period="7d")
             
             if hist.empty:
-                dispatcher.utter_message(text=f"📊 Couldn't fetch data for {index_name}.")
-                return []
+                message = f"📊 Couldn't fetch data for {index_name}."
+                return [
+                    SlotSet("chart_output", message),
+                    SlotSet("chart_image_url", ""),
+                    FollowupAction("utter_chart_results")
+                ]
             
             labels = [date.strftime("%m/%d") for date in hist.index]
             values = [round(price, 2) for price in hist['Close'].values]
@@ -1609,16 +1728,21 @@ class ActionShowChart(Action):
             chart_url = self.generate_quickchart_url(labels, values, f"{display_name} - 7 Day", is_positive)
             
             emoji = "📈" if is_positive else "📉"
-            dispatcher.utter_message(
-                text=f"{emoji} {display_name} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%",
-                image=chart_url
-            )
+            message = f"{emoji} {display_name} - 7 Day Chart\nCurrent: ${current_price:,.2f}\n7d Change: {price_change:+.2f}%"
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", chart_url),
+                FollowupAction("utter_chart_results")
+            ]
             
         except Exception as e:
             print(f"Error generating index chart: {str(e)}")
-            dispatcher.utter_message(text=f"📊 Error generating chart for {index_name}.")
-        
-        return []
+            message = f"📊 Error generating chart for {index_name}."
+            return [
+                SlotSet("chart_output", message),
+                SlotSet("chart_image_url", ""),
+                FollowupAction("utter_chart_results")
+            ]
 
 
 #yahoo (T&S cinese) #check
@@ -1761,10 +1885,35 @@ def _clean_ticker(item: str) -> str:
         '耐克': 'NKE',           
         'starbucks': 'SBUX',
         '星巴克': 'SBUX',        
+
+        # Market indices
+        's&p 500': '^GSPC',
+        's&p500': '^GSPC',
+        'sp500': '^GSPC',
+        's and p 500': '^GSPC',
+        's&p': '^GSPC',
+        'nasdaq': '^IXIC',
+        'nasdaq composite': '^IXIC',
+        'dow jones': '^DJI',
+        'djia': '^DJI',
+        'russell 2000': '^RUT',
+        'ftse 100': '^FTSE',
     }
     
     item_lower = item.strip().lower()  # .lower() affects only English letters
-    return company_to_ticker.get(item_lower, item.strip().upper())
+
+    # Exact match first.
+    direct = company_to_ticker.get(item_lower)
+    if direct:
+        return direct
+
+    # Fallback for phrase-like inputs (e.g., "bitcoin price", "比特幣價格").
+    # Prefer longer keys so specific phrases win over short tokens.
+    for key in sorted(company_to_ticker.keys(), key=len, reverse=True):
+        if key and key in item_lower:
+            return company_to_ticker[key]
+
+    return item.strip().upper()
 
 #check
 def to_alpha_vantage_format(item: str) -> str:
@@ -2038,8 +2187,14 @@ class ActionSaveTransaction(Action):
             
             # Validate
             if not all([transaction_type, transaction_shares, transaction_asset, transaction_date]):
-                dispatcher.utter_message(text="❌ Missing required transaction information.")
-                return []
+                message = "❌ Missing required transaction information."
+                return [
+                    SlotSet("transaction_result_output", message),
+                    SlotSet("transaction_type", None),
+                    SlotSet("transaction_shares", None),
+                    SlotSet("transaction_asset", None),
+                    SlotSet("transaction_date", None)
+                ]
             
             # Convert to ticker
             ticker = _clean_ticker(transaction_asset)
@@ -2055,11 +2210,12 @@ class ActionSaveTransaction(Action):
             print(f"DEBUG: Historical price = {historical_price}")
             
             if historical_price == 0.0:
-                dispatcher.utter_message(
-                    text=f"❌ Could not fetch historical price for {ticker} on {parsed_date}. "
-                        f"Please verify the date and ticker symbol."
+                message = (
+                    f"❌ Could not fetch historical price for {ticker} on {parsed_date}. "
+                    f"Please verify the date and ticker symbol."
                 )
                 return [
+                    SlotSet("transaction_result_output", message),
                     SlotSet("transaction_type", None),
                     SlotSet("transaction_shares", None),
                     SlotSet("transaction_asset", None),
@@ -2082,18 +2238,18 @@ class ActionSaveTransaction(Action):
             print(f"DEBUG: Saving transaction to MongoDB")
             transaction_id = mongo_db.save_transaction(transaction_data)
             print(f"DEBUG: Transaction saved with ID = {transaction_id}")
-            
-            dispatcher.utter_message(
-                text=f"✅ **Transaction Recorded!**\n\n"
-                    f"Type: {transaction_type.upper()}\n"
-                    f"Asset: {ticker}\n"
-                    f"Shares: {transaction_shares}\n"
-                    f"Price on {parsed_date}: ${historical_price:.2f}\n"
-                    f"Date: {parsed_date}\n"
-                    f"Total Value: ${total_value:.2f}"
+            message = (
+                f"✅ **Transaction Recorded!**\n\n"
+                f"Type: {transaction_type.upper()}\n"
+                f"Asset: {ticker}\n"
+                f"Shares: {transaction_shares}\n"
+                f"Price on {parsed_date}: ${historical_price:.2f}\n"
+                f"Date: {parsed_date}\n"
+                f"Total Value: ${total_value:.2f}"
             )
             
             return [
+                SlotSet("transaction_result_output", message),
                 SlotSet("transaction_type", None),
                 SlotSet("transaction_shares", None),
                 SlotSet("transaction_asset", None),
@@ -2104,8 +2260,14 @@ class ActionSaveTransaction(Action):
             print(f"ERROR in ActionSaveTransaction: {str(e)}")
             import traceback
             traceback.print_exc()
-            dispatcher.utter_message(text=f"❌ Error processing transaction: {str(e)}")
-            return []
+            message = f"❌ Error processing transaction: {str(e)}"
+            return [
+                SlotSet("transaction_result_output", message),
+                SlotSet("transaction_type", None),
+                SlotSet("transaction_shares", None),
+                SlotSet("transaction_asset", None),
+                SlotSet("transaction_date", None)
+            ]
 
 #get transaction
 class ActionGetTransactions(Action):
@@ -2167,11 +2329,11 @@ class ActionGetTransactions(Action):
         transactions = mongo_db.get_all_transactions()
         
         if not transactions:
-            dispatcher.utter_message(
-                text="📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\n"
-                     "Start by recording a buy or sell transaction!"
-            )
-            return []
+            message = "📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\nStart by recording a buy or sell transaction!"
+            return [
+                SlotSet("portfolio_output", message),
+                FollowupAction("utter_portfolio_results")
+            ]
         
         # Calculate positions
         positions = self._calculate_positions(transactions)
@@ -2219,9 +2381,11 @@ class ActionGetTransactions(Action):
         message += f"Total Cost: ${total_cost:.2f}\n"
         message += f"Total P&L: ${total_pnl:+.2f} ({total_pnl_percent:+.2f}%) {summary_emoji}\n"
         message += f"Transactions: {len(transactions)}"
-        
-        dispatcher.utter_message(text=message)
-        return []
+
+        return [
+            SlotSet("portfolio_output", message),
+            FollowupAction("utter_portfolio_results")
+        ]
 
 #
 class ActionGetTransactionsByAsset(Action):
@@ -2240,8 +2404,12 @@ class ActionGetTransactionsByAsset(Action):
         filter_asset = tracker.get_slot("filter_asset")
         
         if not filter_asset:
-            dispatcher.utter_message(text="Please specify which asset to filter by.")
-            return []
+            message = "Please specify which asset to filter by."
+            return [
+                SlotSet("asset_transactions_output", message),
+                SlotSet("filter_asset", None),
+                FollowupAction("utter_asset_transactions_results")
+            ]
         
         # Convert to ticker
         ticker = _clean_ticker(filter_asset)
@@ -2250,8 +2418,12 @@ class ActionGetTransactionsByAsset(Action):
         transactions = mongo_db.get_transactions_by_asset(ticker)
         
         if not transactions:
-            dispatcher.utter_message(text=f"No transactions found for {ticker}.")
-            return [SlotSet("filter_asset", None)]
+            message = f"No transactions found for {ticker}."
+            return [
+                SlotSet("asset_transactions_output", message),
+                SlotSet("filter_asset", None),
+                FollowupAction("utter_asset_transactions_results")
+            ]
         
         # Calculate position
         total_shares = 0
@@ -2306,6 +2478,9 @@ class ActionGetTransactionsByAsset(Action):
         pnl_emoji = "📈" if pnl >= 0 else "📉"
         message += f"P&L: ${pnl:+.2f} ({pnl_percent:+.2f}%) {pnl_emoji}\n\n"
         message += f"Transactions: {buy_count} buys, {sell_count} sells"
-        
-        dispatcher.utter_message(text=message)
-        return [SlotSet("filter_asset", None)]
+
+        return [
+            SlotSet("asset_transactions_output", message),
+            SlotSet("filter_asset", None),
+            FollowupAction("utter_asset_transactions_results")
+        ]

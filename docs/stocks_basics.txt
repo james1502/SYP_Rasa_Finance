@@ -1,0 +1,33 @@
+---
+TOPIC: Stocks
+CATEGORY: Equities
+RELATED_CONCEPTS: Dividends, Stock Valuation, Market Indexes
+KEYWORDS: stock, equity, shares, ownership, common stock, preferred stock
+---
+
+# What Is a Stock?
+
+A stock (or equity) represents fractional ownership in a company. When you buy a stock, you own a piece of that business and may profit if the company grows.
+
+## BEGINNER LEVEL
+Think of a company as a pizza – each share is one slice. If the pizza gets bigger (the company becomes more valuable), your slice is worth more.
+
+## INTERMEDIATE LEVEL
+Stocks trade on exchanges like the NYSE or NASDAQ.  
+- **Common stock**: Voting rights + potential dividends.  
+- **Preferred stock**: No voting rights, but fixed dividends and higher claim on assets in bankruptcy.
+
+Key terms:  
+- **Ticker**: The symbol that identifies a stock (e.g., AAPL = Apple).  
+- **Market Cap**: Stock price × total shares outstanding.  
+- **IPO**: Initial Public Offering – the first sale of shares to the public.
+
+## ADVANCED LEVEL
+Market cap categories:  
+- Mega-cap: >$200 billion  
+- Large-cap: $10–200 billion  
+- Mid-cap: $2–10 billion  
+- Small-cap: $300 million–$2 billion  
+- Micro-cap: <$300 million
+
+A company’s stock price is driven by earnings, growth, interest rates, and market sentiment. Discounted cash flow (DCF) analysis estimates intrinsic value. Behavioral biases often cause price to deviate from that value.

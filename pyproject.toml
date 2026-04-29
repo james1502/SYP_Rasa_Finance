@@ -1,0 +1,12 @@
+[project]
+name = "rasa-cb"
+version = "0.1.0"
+description = "Rasa on finance industry"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jieba>=0.42.1",
+    "rasa-pro>=3.16.3",
+    "sentence-transformers>=5.4.0",
+    "yfinance>=0.2.58",
+]

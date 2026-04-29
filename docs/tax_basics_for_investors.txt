@@ -1,0 +1,29 @@
+---
+TOPIC: Tax Basics for Investors
+CATEGORY: Tax & Investing
+RELATED_CONCEPTS: Capital Gains, Dividends, Retirement Accounts, Tax-Loss Harvesting
+KEYWORDS: capital gains, tax bracket, dividend tax, tax-loss harvesting, tax-efficient
+---
+
+# How Taxes Affect Your Investments
+
+Taxes take a slice of your investment returns. Knowing the rules helps you keep more of your money.
+
+## BEGINNER LEVEL
+- If you sell a stock for more than you paid, that profit is a "capital gain" and may be taxed.
+- Owning in a retirement account (IRA, 401(k)) shields you from these taxes until withdrawal (or forever in a Roth).
+- Dividends often count as income too, even if you reinvest them.
+
+## INTERMEDIATE LEVEL
+- **Short‑term capital gains**: Assets held ≤1 year, taxed as ordinary income (up to 37%).
+- **Long‑term capital gains**: Assets held >1 year, taxed at 0%, 15%, or 20% depending on your income.
+- **Qualified dividends**: Taxed at the lower long‑term capital gains rate.
+- **Wash sale rule**: You can’t claim a loss on a stock if you buy it back within 30 days before or after the sale.
+- **Tax‑efficient fund placement**: Keep high‑tax assets (bonds, REITs) in tax‑advantaged accounts; low‑turnover equity ETFs in taxable accounts.
+
+## ADVANCED LEVEL
+- **Tax‑loss harvesting (TLH)**: Selling losing investments to offset gains, then reinvesting in similar (but not identical) assets.
+- **Tax‑gain harvesting**: Realizing gains in a low‑income year when your long‑term capital gains rate is 0%.
+- **Net investment income tax (NIIT)**: An additional 3.8% surtax on investment income for high earners.
+- **ETF vs. mutual fund tax efficiency**: ETFs rarely distribute capital gains due to in‑kind redemption.
+- **Donor‑advised funds (DAFs)** and **qualified charitable distributions** from IRAs for tax‑efficient giving.

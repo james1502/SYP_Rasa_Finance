@@ -22,7 +22,7 @@ flows:
   # Educational search flow
   search_flow:
     description: >
-      Answer educational questions about investment concepts, definitions, and financial terminology.
+      Answer educational questions about investment concepts, definitions, and financial terminology / 回答投資概念、定義與金融術語的教育型問題。
       Use when user asks "what is", "what are", "explain", "define", or "tell me about" followed by an investment concept.
       Examples: "what is a stock", "explain ETFs", "define dividend", "tell me about bonds".
       NOT for: company data, prices, news, or comparisons.
@@ -33,7 +33,7 @@ flows:
   # Market data 
   handle_market_data_query:
     description: >
-      Get real-time stock data for a specific company or ticker symbol.
+      Get real-time stock data for a specific company or ticker symbol / 取得特定公司或代號的即時股價資料。
       Trigger when user mentions a company name or ticker with data-related keywords.
       Examples: "Apple stock price", "AAPL price", "Tesla volume", "Microsoft stock data", "show me Google price".
       Companies: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix.
@@ -64,7 +64,7 @@ flows:
   # Index info 
   handle_index_info_query:
     description: >
-      Get current value and performance of market indexes like S&P 500, NASDAQ, Dow Jones, Russell 2000, FTSE 100.
+      Get current value and performance of market indexes like S&P 500, NASDAQ, Dow Jones, Russell 2000, FTSE 100 / 查詢市場指數的即時數值與表現。
       Trigger when user asks about market index values or performance.
       Examples: "What's the S&P 500 at", "NASDAQ value", "Dow Jones price", "How is the Russell 2000 doing".
       Market indexes are collections of stocks measuring market performance, NOT individual companies.
@@ -94,7 +94,7 @@ flows:
   # Market news 
   handle_market_news_query:
     description: >
-      Get breaking news, headlines, or articles about a specific company or market sector.
+      Get breaking news, headlines, or articles about a specific company or market sector / 取得特定公司或產業的即時新聞與頭條。
       Trigger when user mentions "news", "headlines", or "articles" with a company name or sector.
       Examples: "Tesla news", "Apple headlines", "news about Amazon", "tech news", "market news".
       NOT for: educational questions without news keyword, price queries, or general company information.
@@ -118,12 +118,11 @@ flows:
       - id: fetch_news
         action: action_fetch_market_news
       - action: utter_news_results
-      - action: utter_ask_followup
 
   # Comparison 
   handle_comparison_query:
     description: >
-      Compare performance metrics between two or more companies or securities.
+      Compare performance metrics between two or more companies or securities / 比較兩個以上公司或資產的績效指標。
       Trigger when user wants to compare multiple assets using "compare", "vs", "versus", or "difference between".
       Examples: "compare Apple and Tesla", "AAPL vs TSLA", "difference between Microsoft and Google".
       Requires at least two company names or tickers.
@@ -162,12 +161,11 @@ flows:
       - id: fetch_comparison
         action: action_fetch_comparison_data
       - action: utter_comparison_results
-      - action: utter_ask_followup
 
   # Chart 
   handle_chart_query:
     description: >
-      Generate and display price charts for stocks, cryptocurrencies, or market indexes.
+      Generate and display price charts for stocks, cryptocurrencies, or market indexes / 產生並顯示股票、加密貨幣或指數的價格圖表。
       Trigger when user mentions "chart", "graph", or "visualization" with an asset name.
       Examples: "Bitcoin chart", "Apple chart", "show Tesla chart", "S&P 500 chart", "AAPL price chart", "show me Google price chart".
       Supports stocks, cryptocurrencies, and market indexes.
@@ -191,12 +189,11 @@ flows:
       
       - id: show_chart
         action: action_show_chart
-      - action: utter_ask_followup
 
   # Analysis 
   handle_analysis_query:
     description: >
-      Provide detailed financial analysis of a company's performance, trends, and key metrics.
+      Provide detailed financial analysis of a company's performance, trends, and key metrics / 提供公司績效、趨勢與關鍵指標的財務分析。
       Trigger when user mentions "analyze", "analysis", "financial analysis", or "performance analysis" with a company name.
       Examples: "analyze Apple", "Apple analysis", "give me analysis of Microsoft", "financial analysis Amazon".
       Requires a specific company name or ticker.
@@ -222,12 +219,11 @@ flows:
       - id: fetch_analysis
         action: action_fetch_analysis
       - action: utter_analysis_results
-      - action: utter_ask_followup
 
   # Greeting
   greet_user:
     description: >
-      Greet the user when they initiate conversation with hello, hi, hey, good morning, good afternoon, or good evening.
+      Greet the user when they initiate conversation with hello, hi, hey, good morning, good afternoon, or good evening / 當使用者以你好、早安、午安、晚安等問候時進行回應。
     steps:
       - action: utter_greet
       - action: utter_offer_help
@@ -235,18 +231,20 @@ flows:
   # End conversation
   end_conversation:
     description: >
-      End the conversation gracefully when user says goodbye, bye, exit, quit, or indicates they want to end the conversation.
+      End the conversation gracefully when user says goodbye, bye, exit, quit, or indicates they want to end the conversation / 當使用者表示要結束對話時，禮貌地結束對話。
     steps:
       - action: action_correct_typo
       - action: utter_goodbye
 
   # Pattern completed
+  
   pattern_completed:
     description: Ask if the user needs more help after completing their request
     steps:
       - action: utter_can_do_something_else
 
   # Intent clarification
+  
   pattern_clarification:
     description: Handle ambiguous requests that could match multiple flows by asking the user to clarify their intent
     steps:

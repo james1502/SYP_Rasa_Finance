@@ -1,5 +1,4 @@
+jieba
 rasa-pro
-rasa_sdk==3.15.0
-Requests==2.32.5
-yfinance==0.2.58
-sentence-transformers==5.1.2
+sentence-transformers
+yfinance
