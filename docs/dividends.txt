@@ -10,16 +10,16 @@ KEYWORDS: dividend, yield, payout ratio, income investing, ex-dividend date
 Dividends are cash payments a company makes to shareholders from its profits.
 
 ## BEGINNER LEVEL
-If you lend a friend $1,000 to start a coffee shop and they give you $50 annually from the profit – that $50 is a dividend.
+If you lend a friend $1,000 to start a coffee shop and they give you $50 annually from the profit - that $50 is a dividend.
 
 ## INTERMEDIATE LEVEL
 - **Dividend Yield** = Annual dividend / Stock price.  
   Example: $4 dividend on a $100 stock = 4% yield.  
 - **Payout Ratio** = Dividends / Net income. Less than 50% is usually safe.  
-- **Ex‑dividend date**: You must own the stock *before* this date to receive the next dividend.  
-- **Dividend Aristocrats**: S&P 500 companies that have raised dividends for 25+ consecutive years (e.g., Coca‑Cola, Johnson & Johnson).
+- **Ex-dividend date**: You must own the stock *before* this date to receive the next dividend.  
+- **Dividend Aristocrats**: S&P 500 companies that have raised dividends for 25+ consecutive years (e.g., Coca-Cola, Johnson & Johnson).
 
 ## ADVANCED LEVEL
 Dividend growth investing focuses on companies that consistently increase payouts. The Dividend Discount Model (DDM) values a stock by discounting future dividend payments.  
-- **Gordon Growth Model**: Stock value = Next year’s dividend / (required return – growth rate).  
+- **Gordon Growth Model**: Stock value = Next year's dividend / (required return - growth rate).  
 - Risks: Dividend cuts often signal deeper trouble. Trailing yield may be misleading if the stock price fell due to business decline.

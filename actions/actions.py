@@ -1,19 +1,38 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Text, TypeVar
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet, FollowupAction, UserUttered
+from rasa_sdk.events import SlotSet, FollowupAction
+from rasa_sdk.types import DomainDict
 import yfinance as yf
 from datetime import datetime, timedelta
 from difflib import get_close_matches
 from .db_connection import mongo_db
 import re
-import requests
 import json
-import urllib.parse  
-import os  
+import urllib.parse
+import os
 import logging
 import jieba
-import re
+import asyncio
+import aiohttp
+import atexit
+import random
+from pandas import DatetimeIndex
+
+
+TRADITIONAL_ONLY = frozenset(
+    "體臺買賣幣舉親讓變點處蘋漲億報績損虧營"
+    "見國學對認經業達應與實選領將調講購較運確結識"
+    "話繁萬龍這個嗎麼掰聞聽說興麗"
+    "發灣時為當過實現業務"
+)
+SIMPLIFIED_ONLY = frozenset(
+    "体买卖币举亲让变点处苹涨亿报绩损亏营"
+    "见国学对认经业达应与实选领将调讲购较运确结识"
+    "简万龙这个吗么"
+    "发湾时为当过实现业务"
+)
+CJK_REG = re.compile(r"[\u4e00-\u9fff]")
 
 
 #split
@@ -23,7 +42,7 @@ def tokenize_query(query: str) -> list:
         return []
     
     # Check if the string contains Chinese characters (Unicode range 4E00-9FFF)
-    if re.search(r'[\u4e00-\u9fff]', query):
+    if CJK_REG.search(query):
         # Chinese – use jieba for segmentation
         tokens = list(jieba.cut(query))
         # Remove spaces and empty strings
@@ -32,7 +51,25 @@ def tokenize_query(query: str) -> list:
     else:
         # English or other space-separated languages
         return query.lower().split()
+
+
+def detect_user_language(text: str) -> str:
+    trad_score = simp_score = 0
     
+    if not text:
+        return "en"
+
+    for ch in text:
+        if ch in TRADITIONAL_ONLY:
+            trad_score += 1
+        elif ch in SIMPLIFIED_ONLY:
+            simp_score += 1
+
+    if trad_score == 0 and simp_score == 0:
+        return "en"
+
+    return "zh-TW" if trad_score >= simp_score else "zh-CN"
+
 #pattern
 
 #check
@@ -79,7 +116,7 @@ def _is_direct_ticker_mapping(candidate: str) -> bool:
     return normalized != candidate.strip().upper()
 
 
-def _extract_best_entity_candidate(query: str) -> str:
+def extract_best_entity_candidate(query: str) -> Optional[str]:
     """Extract entity candidate robustly for Chinese and English queries."""
     if not query:
         return None
@@ -101,7 +138,6 @@ def _extract_best_entity_candidate(query: str) -> str:
             return candidate
 
     return cleaned_tokens[0]
-
 # EXTRAc
 
 class ActionExtractSecurityName(Action):
@@ -110,15 +146,11 @@ class ActionExtractSecurityName(Action):
     def name(self) -> Text:
         return "action_extract_security_name"
     
-    def _extract_company_from_query(self, query: str) -> str:
-        """Extract just the company name from a query"""
-        return _extract_best_entity_candidate(query)
-    
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -128,7 +160,7 @@ class ActionExtractSecurityName(Action):
         query_to_use = corrected_query if corrected_query else user_message
         
         # Extract company name
-        company_name = self._extract_company_from_query(query_to_use)
+        company_name = extract_best_entity_candidate(query_to_use)
         
         if company_name:
             # Convert to ticker
@@ -143,7 +175,7 @@ class ActionExtractIndexName(Action):
     def name(self) -> Text:
         return "action_extract_index_name"
     
-    def _extract_index_from_query(self, query: str) -> str:
+    def _extract_index_from_query(self, query: str) -> Optional[str]:
         """Extract index name from query"""
         if not query:
             return None
@@ -167,11 +199,11 @@ class ActionExtractIndexName(Action):
         
         return cleaned_tokens[0] if cleaned_tokens else None
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -189,7 +221,7 @@ class ActionExtractNewsTopic(Action):
     def name(self) -> Text:
         return "action_extract_news_topic"
     
-    def _extract_topic_from_query(self, query: str) -> str:
+    def _extract_topic_from_query(self, query: str) -> Optional[str]:
         """Extract topic from news query"""
         if not query:
             return None
@@ -199,11 +231,11 @@ class ActionExtractNewsTopic(Action):
         cleaned = [t for t in tokens if t not in noise_words]
         return cleaned[0] if cleaned else None
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -221,7 +253,7 @@ class ActionExtractComparisonItems(Action):
     def name(self) -> Text:
         return "action_extract_comparison_items"
     
-    def _extract_companies_from_text(self, text: str) -> str:
+    def _extract_companies_from_text(self, text: str) -> Optional[str]:
         if not text:
             return None
         
@@ -412,7 +444,7 @@ class ActionExtractComparisonItems(Action):
         
         return None
 
-    def _extract_comparison_criteria(self, text: str) -> str:
+    def _extract_comparison_criteria(self, text: str) -> Optional[str]:
         """Infer a comparison criterion or timeframe from the user's message."""
         if not text:
             return None
@@ -432,11 +464,11 @@ class ActionExtractComparisonItems(Action):
 
         return None
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -459,15 +491,11 @@ class ActionExtractAnalysisCompany(Action):
     def name(self) -> Text:
         return "action_extract_analysis_company"
     
-    def _extract_company_from_query(self, query: str) -> str:
-        """Extract company name from analysis query"""
-        return _extract_best_entity_candidate(query)
-    
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -475,7 +503,7 @@ class ActionExtractAnalysisCompany(Action):
         
         query_to_use = corrected_query if corrected_query else user_message
         
-        company_name = self._extract_company_from_query(query_to_use)
+        company_name = extract_best_entity_candidate(query_to_use)
         
         if company_name:
             ticker = _clean_ticker(company_name)
@@ -489,15 +517,15 @@ class ActionExtractChartAsset(Action):
     def name(self) -> Text:
         return "action_extract_chart_asset"
     
-    def _extract_asset_from_query(self, query: str) -> str:
+    def _extract_asset_from_query(self, query: str) -> Optional[str]:
         """Extract asset name from chart query"""
-        return _extract_best_entity_candidate(query)
+        return extract_best_entity_candidate(query)
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
@@ -509,7 +537,6 @@ class ActionExtractChartAsset(Action):
         
         return [SlotSet("chart_asset", asset_name)]
 
-
 #Corrects typos #check
 class ActionCorrectTypo(Action):
     """Simple typo correction - just corrects and stores"""
@@ -517,15 +544,12 @@ class ActionCorrectTypo(Action):
     def name(self) -> Text:
         return "action_correct_typo"
     
-    def _get_valid_terms(self) -> List[str]:
-        return _get_valid_terms_pattern()
-    
     def _correct_text(self, text: str) -> tuple:
         """Correct typos and return (corrected_text, was_corrected)"""
         if not text:
             return text, False
             
-        valid_terms = self._get_valid_terms()
+        valid_terms = _get_valid_terms_pattern()
         words = text.lower().split()
         corrected_words = []
         has_correction = False
@@ -546,40 +570,60 @@ class ActionCorrectTypo(Action):
         corrected_text = " ".join(corrected_words)
         return corrected_text, has_correction
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         user_message = tracker.latest_message.get('text', '')
-        corrected_message, has_correction = self._correct_text(user_message)
-        logging.getLogger(__name__).info("Typo correction evaluated text=%r", user_message)
+        detected_language = detect_user_language(user_message)
 
-        events: List[Dict[Text, Any]] = []
+        corrected_query = user_message
 
-        lowered_message = user_message.lower()
-        suppress_correction_message = any(
-            keyword in lowered_message
-            for keyword in ["compare", " vs ", " versus ", "difference between", "trend", "trends"]
+        if detected_language == "en":
+            corrected_message, has_correction = self._correct_text(user_message)
+            logging.getLogger(__name__).info("Typo correction evaluated text=%r", user_message)
+
+            lowered_message = user_message.lower()
+            suppress_correction_message = any(
+                keyword in lowered_message
+                for keyword in ["compare", " vs ", " versus ", "difference between", "trend", "trends"]
+            )
+
+            if has_correction:
+                corrected_query = corrected_message
+
+                if not suppress_correction_message:
+                    dispatcher.utter_message(text=f"I understood: '{corrected_message}'")
+
+        return [
+            SlotSet("corrected_query", corrected_query),
+        ]
+
+class ActionDetectLanguage(Action):
+    """Detect user language on every turn and store in slot"""
+    
+    def name(self) -> Text:
+        return "action_detect_language"
+    
+    async def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: DomainDict,
+    ) -> List[Dict[Text, Any]]:
+        
+        user_message = tracker.latest_message.get('text', '')
+        detected_language = detect_user_language(user_message)
+        
+        logging.getLogger(__name__).info(
+            "Language detected for message=%r: language=%r",
+            user_message, detected_language
         )
         
-        if has_correction and not suppress_correction_message:
-            message = f"I understood: '{corrected_message}'"
-            dispatcher.utter_message(
-                text=message
-            )
-            events.append(SlotSet("corrected_query", corrected_message))
-            return events
-
-        if has_correction:
-            events.append(SlotSet("corrected_query", corrected_message))
-            return events
-        
-        # No correction needed - store original
-        events.append(SlotSet("corrected_query", user_message))
-        return events    
+        return [SlotSet("language", detected_language)]
 
 # matketdata (alpha)
 
@@ -610,11 +654,11 @@ class ActionFetchMarketData(Action):
         
         return keys
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         security_name = tracker.get_slot("security_name")
@@ -629,11 +673,11 @@ class ActionFetchMarketData(Action):
         
         cleaned_yahoo = _clean_ticker(security_name)
         if cleaned_yahoo.endswith('-USD'):
-            return self._fetch_crypto_data_yfinance(cleaned_yahoo, dispatcher)
+            return await self._fetch_crypto_data_yfinance(cleaned_yahoo, dispatcher)
         else:
             alpha_ticker = to_alpha_vantage_format(security_name)
-            return self._fetch_stock_data_alpha_vantage(alpha_ticker, dispatcher)
-    def _fetch_crypto_data_yfinance(
+            return await self._fetch_stock_data_alpha_vantage(alpha_ticker, dispatcher)
+    async def _fetch_crypto_data_yfinance(
         self, 
         crypto_ticker: str, 
         dispatcher: CollectingDispatcher
@@ -641,9 +685,9 @@ class ActionFetchMarketData(Action):
         """Fetch cryptocurrency data using yfinance"""
         
         try:
-            ticker = yf.Ticker(crypto_ticker)
-            info = ticker.info
-            hist = ticker.history(period="1y")
+            ticker = await asyncio.to_thread(yf.Ticker, crypto_ticker)
+            info = await asyncio.to_thread(lambda: ticker.info)
+            hist = await asyncio.to_thread(ticker.history, period="1y")
             
             if hist.empty:
                 raise ValueError(f"No data available for {crypto_ticker}")
@@ -663,27 +707,29 @@ class ActionFetchMarketData(Action):
             high_52week = hist['High'].max()
             low_52week = hist['Low'].min()
             
-            market_data = (
-                f"💰 {crypto_ticker}\n\n"
-                f"Current Price: ${current_price:,.2f}\n"
-                f"Change: ${change:+,.2f} ({change_percent:+.2f}%)\n"
-                f"24h Volume: {int(volume):,}\n"
-                f"Day High: ${day_high:,.2f}\n"
-                f"Day Low: ${day_low:,.2f}\n"
-                f"52-Week High: ${high_52week:,.2f}\n"
-                f"52-Week Low: ${low_52week:,.2f}"
-            )
+            market_data = {
+                "ticker": crypto_ticker,
+                "type": "crypto",
+                "current_price": current_price,
+                "change": change,
+                "change_percent": change_percent,
+                "volume": int(volume),
+                "day_high": day_high,
+                "day_low": day_low,
+                "high_52week": high_52week,
+                "low_52week": low_52week
+            }
             
         except Exception as e:
             print(f"Error fetching crypto data for {crypto_ticker}: {str(e)}")
-            market_data = f"Unable to fetch data for {crypto_ticker}."
+            market_data = {"error": f"Unable to fetch data for {crypto_ticker}."}
         
         return [
             SlotSet("market_data_output", market_data),
             SlotSet("security_name", crypto_ticker)
         ]
     
-    def _fetch_stock_data_alpha_vantage(
+    async def _fetch_stock_data_alpha_vantage(
         self, 
         ticker: str, 
         dispatcher: CollectingDispatcher
@@ -693,137 +739,139 @@ class ActionFetchMarketData(Action):
         api_keys = self._get_alpha_vantage_keys()
         
         if not api_keys:
-            market_data = "No Alpha Vantage API keys configured. Please set ALPHA_VANTAGE_API_KEY."
+            market_data = {"error": "No Alpha Vantage API keys configured. Please set ALPHA_VANTAGE_API_KEY."}
             return [
                 SlotSet("market_data_output", market_data),
                 SlotSet("security_name", ticker)
             ]
         
         quote_url = "https://www.alphavantage.co/query"
-        last_error = None
-        
+        last_error = "Error"
+
         # Try each API key in sequence
         for key_index, api_key in enumerate(api_keys, 1):
-            try:
-                print(f"Attempting Alpha Vantage request with API key #{key_index}")
-                
-                quote_params = {
-                    "function": "GLOBAL_QUOTE",
-                    "symbol": ticker,
-                    "apikey": api_key
-                }
-                
-                quote_response = requests.get(quote_url, params=quote_params, timeout=10)
-                quote_data = quote_response.json()
-                
-                # Check for rate limit
-                if "Note" in quote_data:
-                    rate_limit_msg = quote_data.get("Note", "")
-                    print(f"API key #{key_index} hit rate limit: {rate_limit_msg}")
-                    last_error = "Rate limit reached"
-                    
-                    # Try next key if available
-                    if key_index < len(api_keys):
-                        print(f"Trying backup API key #{key_index + 1}...")
-                        continue
-                    else:
-                        # All keys exhausted, fallback to yfinance
-                        print("All Alpha Vantage API keys exhausted. Falling back to yfinance...")
-                        return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
-                
-                # Check for invalid ticker
-                if "Error Message" in quote_data:
-                    raise ValueError(f"Invalid ticker symbol: {ticker}")
-                
-                # Check for empty response
-                if "Global Quote" not in quote_data or not quote_data["Global Quote"]:
-                    raise ValueError(f"No data available for {ticker}")
-                
-                # Success! Extract data
-                quote = quote_data["Global Quote"]
-                
-                current_price = float(quote.get("05. price", 0))
-                volume = int(quote.get("06. volume", 0))
-                day_high = float(quote.get("03. high", 0))
-                day_low = float(quote.get("04. low", 0))
-                previous_close = float(quote.get("08. previous close", 0))
-                change = float(quote.get("09. change", 0))
-                change_percent = float(quote.get("10. change percent", "0").replace("%", ""))
-                
-                # Get 52-week high/low from yfinance
                 try:
-                    yf_ticker = yf.Ticker(ticker)
-                    hist = yf_ticker.history(period="1y")
-                    
-                    if not hist.empty:
-                        high_52week = hist['High'].max()
-                        low_52week = hist['Low'].min()
-                    else:
+                    print(f"Attempting Alpha Vantage request with API key #{key_index}")
+
+                    quote_data = await fetch_alpha_vantage_json(
+                        quote_url,
+                        api_key=api_key,
+                        params={
+                            "function": "GLOBAL_QUOTE",
+                            "symbol": ticker,
+                        },
+                    )
+
+                    # Check for rate limit
+                    if "Note" in quote_data:
+                        rate_limit_msg = quote_data.get("Note", "")
+                        print(f"API key #{key_index} hit rate limit: {rate_limit_msg}")
+                        last_error = f"Rate limit reached: {rate_limit_msg}"
+
+                        # Try next key if available
+                        if key_index < len(api_keys):
+                            print(f"Trying backup API key #{key_index + 1}...")
+                            continue
+                        else:
+                            # All keys exhausted, fallback to yfinance
+                            print("All Alpha Vantage API keys exhausted. Falling back to yfinance...")
+                            return await self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+
+                    # Check for invalid ticker
+                    if "Error Message" in quote_data:
+                        raise ValueError(f"Invalid ticker symbol: {ticker}")
+
+                    # Check for empty response
+                    if "Global Quote" not in quote_data or not quote_data["Global Quote"]:
+                        raise ValueError(f"No data available for {ticker}")
+
+                    # Success! Extract data
+                    quote = quote_data["Global Quote"]
+
+                    current_price = float(quote.get("05. price", 0))
+                    volume = int(quote.get("06. volume", 0))
+                    day_high = float(quote.get("03. high", 0))
+                    day_low = float(quote.get("04. low", 0))
+                    previous_close = float(quote.get("08. previous close", 0))
+                    change = float(quote.get("09. change", 0))
+                    change_percent = float(quote.get("10. change percent", "0").replace("%", ""))
+
+                    # Get 52-week high/low from yfinance
+                    try:
+                        yf_ticker = await asyncio.to_thread(yf.Ticker, ticker)
+                        hist = await asyncio.to_thread(yf_ticker.history, period="1y")
+
+                        if not hist.empty:
+                            high_52week = hist['High'].max()
+                            low_52week = hist['Low'].min()
+                        else:
+                            high_52week = day_high
+                            low_52week = day_low
+                    except:
                         high_52week = day_high
                         low_52week = day_low
-                except:
-                    high_52week = day_high
-                    low_52week = day_low
-                
-                print(f"Successfully fetched data using API key #{key_index}")
-                
-                market_data = (
-                    f"📊 {ticker}\n\n"
-                    f"Current Price: ${current_price:.2f}\n"
-                    f"Change: ${change:+.2f} ({change_percent:+.2f}%)\n"
-                    f"Volume: {volume:,}\n"
-                    f"Day High: ${day_high:.2f}\n"
-                    f"Day Low: ${day_low:.2f}\n"
-                    f"52-Week High: ${high_52week:.2f}\n"
-                    f"52-Week Low: ${low_52week:.2f}"
-                )
-                
-                return [
-                    SlotSet("market_data_output", market_data),
-                    SlotSet("security_name", ticker)
-                ]
-                
-            except requests.exceptions.RequestException as e:
-                print(f"Network error with API key #{key_index}: {str(e)}")
-                last_error = str(e)
-                
-                # Try next key if available
-                if key_index < len(api_keys):
-                    continue
-                else:
-                    # All keys failed, fallback to yfinance
-                    print("All Alpha Vantage API keys failed. Falling back to yfinance...")
-                    return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
-                    
-            except ValueError as e:
-                # Don't retry on invalid ticker
-                print(f"ValueError: {str(e)}")
-                market_data = str(e)
-                return [
-                    SlotSet("market_data_output", market_data),
-                    SlotSet("security_name", ticker)
-                ]
-                
-            except Exception as e:
-                print(f"Unexpected error with API key #{key_index}: {str(e)}")
-                last_error = str(e)
-                
-                # Try next key if available
-                if key_index < len(api_keys):
-                    continue
-                else:
-                    # All keys failed, fallback to yfinance
-                    print("All Alpha Vantage API keys failed. Falling back to yfinance...")
-                    return self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+
+                    print(f"Successfully fetched data using API key #{key_index}")
+
+                    market_data = {
+                        "ticker": ticker,
+                        "type": "stock",
+                        "current_price": current_price,
+                        "change": change,
+                        "change_percent": change_percent,
+                        "volume": volume,
+                        "day_high": day_high,
+                        "day_low": day_low,
+                        "high_52week": high_52week,
+                        "low_52week": low_52week
+                    }
+
+                    return [
+                        SlotSet("market_data_output", market_data),
+                        SlotSet("security_name", ticker)
+                    ]
+
+                except aiohttp.ClientError as e:
+                    print(f"Network error with API key #{key_index}: {str(e)}")
+                    last_error = str(e)
+
+                    # Try next key if available
+                    if key_index < len(api_keys):
+                        continue
+                    else:
+                        # All keys failed, fallback to yfinance
+                        print("All Alpha Vantage API keys failed. Falling back to yfinance...")
+                        return await self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
+
+                except ValueError as e:
+                    # Don't retry on invalid ticker
+                    print(f"ValueError: {str(e)}")
+                    market_data = {"error": str(e)}
+                    return [
+                        SlotSet("market_data_output", market_data),
+                        SlotSet("security_name", ticker)
+                    ]
+
+                except Exception as e:
+                    print(f"Unexpected error with API key #{key_index}: {str(e)}")
+                    last_error = str(e)
+
+                    # Try next key if available
+                    if key_index < len(api_keys):
+                        continue
+                    else:
+                        # All keys failed, fallback to yfinance
+                        print("All Alpha Vantage API keys failed. Falling back to yfinance...")
+                        return await self._fetch_stock_data_yfinance_fallback(ticker, dispatcher)
         
         # Should not reach here, but just in case
-        market_data = f"Unable to fetch data for {ticker}. Last error: {last_error}"
+        market_data = {"error": f"Unable to fetch data for {ticker}. Last error: {last_error}"}
         return [
             SlotSet("market_data_output", market_data),
             SlotSet("security_name", ticker)
         ]
     
-    def _fetch_stock_data_yfinance_fallback(
+    async def _fetch_stock_data_yfinance_fallback(
         self, 
         ticker: str, 
         dispatcher: CollectingDispatcher
@@ -833,9 +881,9 @@ class ActionFetchMarketData(Action):
         try:
             print(f"Using yfinance fallback for {ticker}")
             
-            yf_ticker = yf.Ticker(ticker)
-            info = yf_ticker.info
-            hist = yf_ticker.history(period="1y")
+            yf_ticker = await asyncio.to_thread(yf.Ticker, ticker)
+            info = await asyncio.to_thread(lambda: yf_ticker.info)
+            hist = await asyncio.to_thread(yf_ticker.history, period="1y")
             
             if hist.empty:
                 raise ValueError(f"No data available for {ticker}")
@@ -855,20 +903,23 @@ class ActionFetchMarketData(Action):
             high_52week = hist['High'].max()
             low_52week = hist['Low'].min()
             
-            market_data = (
-                f"📊 {ticker} (via backup source)\n\n"
-                f"Current Price: ${current_price:.2f}\n"
-                f"Change: ${change:+.2f} ({change_percent:+.2f}%)\n"
-                f"Volume: {int(volume):,}\n"
-                f"Day High: ${day_high:.2f}\n"
-                f"Day Low: ${day_low:.2f}\n"
-                f"52-Week High: ${high_52week:.2f}\n"
-                f"52-Week Low: ${low_52week:.2f}"
-            )
+            market_data = {
+                "ticker": ticker,
+                "type": "stock",
+                "source": "backup",
+                "current_price": current_price,
+                "change": change,
+                "change_percent": change_percent,
+                "volume": int(volume),
+                "day_high": day_high,
+                "day_low": day_low,
+                "high_52week": high_52week,
+                "low_52week": low_52week
+            }
             
         except Exception as e:
             print(f"Yfinance fallback also failed for {ticker}: {str(e)}")
-            market_data = f"Unable to fetch data for {ticker}. Please try again later."
+            market_data = {"error": f"Unable to fetch data for {ticker}. Please try again later."}
         
         return [
             SlotSet("market_data_output", market_data),
@@ -882,11 +933,11 @@ class ActionFetchIndexInfo(Action):
     def name(self) -> Text:
         return "action_fetch_index_info"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         index_name = tracker.get_slot("index_name")
@@ -983,8 +1034,8 @@ class ActionFetchIndexInfo(Action):
         ticker_symbol = index_mapping.get(index_name_clean, index_name)
         
         try:
-            ticker = yf.Ticker(ticker_symbol)
-            hist = ticker.history(period="1y")
+            ticker = await asyncio.to_thread(yf.Ticker, ticker_symbol)
+            hist = await asyncio.to_thread(ticker.history, period="1y")
             
             if hist.empty:
                 raise ValueError(f"No data available for {index_name}")
@@ -996,7 +1047,7 @@ class ActionFetchIndexInfo(Action):
             
             # Calculate YTD return
             ytd_start = datetime(datetime.now().year, 1, 1)
-            ytd_hist = ticker.history(start=ytd_start)
+            ytd_hist = await asyncio.to_thread(ticker.history, start=ytd_start)
             
             if not ytd_hist.empty:
                 ytd_return = ((current_level - ytd_hist['Close'].iloc[0]) / ytd_hist['Close'].iloc[0] * 100)
@@ -1021,6 +1072,25 @@ class ActionFetchMarketNews(Action):
     
     def name(self) -> Text:
         return "action_fetch_market_news"
+
+    def _get_alpha_vantage_keys(self) -> List[str]:
+        """Get list of Alpha Vantage API keys from environment."""
+        keys = []
+
+        primary_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+        if primary_key:
+            keys.append(primary_key)
+
+        i = 2
+        while True:
+            backup_key = os.getenv(f"ALPHA_VANTAGE_API_KEY_{i}")
+            if backup_key:
+                keys.append(backup_key)
+                i += 1
+            else:
+                break
+
+        return keys
     
     def _format_news_output(self, news_data: List[Dict], topic: str) -> str:
         """Format news data into readable output"""
@@ -1046,51 +1116,83 @@ class ActionFetchMarketNews(Action):
         
         return "\n\n".join(formatted_news)
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
-        
-        API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
-        
+
         news_topic = tracker.get_slot("news_topic")
         print(news_topic)
         if not news_topic:
             news_output = "Please specify what topic or company you'd like news about."
             return [SlotSet("news_output", news_output)]
+
+        api_keys = self._get_alpha_vantage_keys()
+        if not api_keys:
+            news_output = "No Alpha Vantage API keys configured. Please set ALPHA_VANTAGE_API_KEY."
+            return [SlotSet("news_output", news_output)]
         
         # Convert topic to ticker if it's a company name
         ticker = to_alpha_vantage_format(news_topic)
-        
-        try:
-            base_url = "https://www.alphavantage.co/query"
-            
-            params = {
-                "function": "NEWS_SENTIMENT",
-                "tickers": ticker,
-                "apikey": API_KEY,
-                "sort": "LATEST"
-            }
-            
-            response = requests.get(base_url, params=params, timeout=10)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            if "feed" in data:
-                news_data = data["feed"]
-                news_output = self._format_news_output(news_data, news_topic)
-            else:
+
+        base_url = "https://www.alphavantage.co/query"
+        last_note = None
+
+        for key_index, api_key in enumerate(api_keys, 1):
+            try:
+                data = await fetch_alpha_vantage_json(
+                    base_url,
+                    api_key=api_key,
+                    params={
+                        "function": "NEWS_SENTIMENT",
+                        "tickers": ticker,
+                        "sort": "LATEST",
+                    },
+                )
+
+                if "Note" in data:
+                    last_note = data.get("Note", "")
+                    print(f"News API key #{key_index} hit rate limit: {last_note}")
+                    if key_index < len(api_keys):
+                        continue
+                    news_output = (
+                        "Alpha Vantage news rate limit reached. "
+                        "Please wait a minute and try again."
+                    )
+                    return [SlotSet("news_output", news_output)]
+
+                if "Error Message" in data:
+                    news_output = f"Unable to fetch news for {news_topic}. Please check the topic and try again."
+                    return [SlotSet("news_output", news_output)]
+
+                if "feed" in data:
+                    news_data = data["feed"]
+                    news_output = self._format_news_output(news_data, news_topic)
+                    return [SlotSet("news_output", news_output)]
+
                 news_output = f"Unable to fetch news for {news_topic}. Please try again later."
-                
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching news: {str(e)}")
+                return [SlotSet("news_output", news_output)]
+
+            except aiohttp.ClientError as e:
+                print(f"Error fetching news with API key #{key_index}: {str(e)}")
+                if key_index >= len(api_keys):
+                    news_output = f"Unable to fetch news for {news_topic}. Please try again later."
+                    return [SlotSet("news_output", news_output)]
+            except Exception as e:
+                print(f"Unexpected error with API key #{key_index}: {str(e)}")
+                if key_index >= len(api_keys):
+                    news_output = f"Unable to fetch news for {news_topic}."
+                    return [SlotSet("news_output", news_output)]
+
+        if last_note:
+            news_output = (
+                "Alpha Vantage news rate limit reached. "
+                "Please wait a minute and try again."
+            )
+        else:
             news_output = f"Unable to fetch news for {news_topic}. Please try again later."
-        except Exception as e:
-            print(f"Unexpected error: {str(e)}")
-            news_output = f"Unable to fetch news for {news_topic}."
         
         return [SlotSet("news_output", news_output)]
 
@@ -1102,11 +1204,11 @@ class ActionFetchComparisonData(Action):
     def name(self) -> Text:
         return "action_fetch_comparison_data"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "YOUR_API_KEY_HERE")
@@ -1150,8 +1252,8 @@ class ActionFetchComparisonData(Action):
                 
                 try:
                     # Use yfinance for comparison (more reliable for historical data)
-                    ticker = yf.Ticker(ticker_symbol)
-                    hist = ticker.history(period=period)
+                    ticker = await asyncio.to_thread(yf.Ticker, ticker_symbol)
+                    hist = await asyncio.to_thread(ticker.history, period=period)
                     
                     if not hist.empty:
                         start_price = hist['Close'].iloc[0]
@@ -1194,7 +1296,7 @@ class ActionFetchAnalysis(Action):
     def name(self) -> Text:
         return "action_fetch_analysis"
     
-    def _generate_ollama_summary(
+    async def _generate_ollama_summary(
         self, 
         company_name: str,
         ticker: str,
@@ -1252,27 +1354,22 @@ Write a professional, objective summary that highlights the key performance and 
                 }
             }
             
-            response = requests.post(
-                ollama_url, 
-                json=payload, 
-                timeout=30
+            result = await fetch_ollama_json(
+                ollama_url,
+                model=payload["model"],
+                prompt=payload["prompt"],
+                timeout_total=30,
             )
+            summary = result.get('response', '').strip()
+
+            # Clean up the response
+            summary = summary.replace("Here is the summary:", "").strip()
+            summary = summary.replace("Here's the summary:", "").strip()
+
+            return summary if summary else self._template_summary(ytd_return)
             
-            if response.status_code == 200:
-                result = response.json()
-                summary = result.get('response', '').strip()
-                
-                # Clean up the response
-                summary = summary.replace("Here is the summary:", "").strip()
-                summary = summary.replace("Here's the summary:", "").strip()
-                
-                return summary if summary else self._template_summary(ytd_return)
-            else:
-                print(f"Ollama API error: {response.status_code}")
-                return self._template_summary(ytd_return)
-            
-        except requests.exceptions.Timeout:
-            print("Ollama API timeout - using template summary")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            print(f"Ollama API error or timeout - using template summary: {str(e)}")
             return self._template_summary(ytd_return)
         except Exception as e:
             print(f"Error generating Ollama summary: {str(e)}")
@@ -1347,11 +1444,11 @@ Write a professional, objective summary that highlights the key performance and 
         else:
             return f"{num:,.0f}"
 
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         analysis_company = tracker.get_slot("analysis_company")
@@ -1364,9 +1461,9 @@ Write a professional, objective summary that highlights the key performance and 
         ticker_symbol = analysis_company
         
         try:
-            ticker = yf.Ticker(ticker_symbol)
-            info = ticker.info
-            hist = ticker.history(period="1y")
+            ticker = await asyncio.to_thread(yf.Ticker, ticker_symbol)
+            info = await asyncio.to_thread(lambda: ticker.info)
+            hist = await asyncio.to_thread(ticker.history, period="1y")
             
             if hist.empty:
                 raise ValueError(f"No data available for {ticker_symbol}")
@@ -1378,7 +1475,7 @@ Write a professional, objective summary that highlights the key performance and 
             
             # Performance Metrics
             ytd_start = datetime(datetime.now().year, 1, 1)
-            ytd_hist = ticker.history(start=ytd_start)
+            ytd_hist = await asyncio.to_thread(ticker.history, start=ytd_start)
             
             if not ytd_hist.empty:
                 ytd_return = ((current_price - ytd_hist['Close'].iloc[0]) / ytd_hist['Close'].iloc[0] * 100)
@@ -1387,7 +1484,7 @@ Write a professional, objective summary that highlights the key performance and 
             
             # 1-month performance
             month_ago = datetime.now() - timedelta(days=30)
-            month_hist = ticker.history(start=month_ago)
+            month_hist = await asyncio.to_thread(ticker.history, start=month_ago)
             if not month_hist.empty:
                 month_return = ((current_price - month_hist['Close'].iloc[0]) / month_hist['Close'].iloc[0] * 100)
             else:
@@ -1411,14 +1508,14 @@ Write a professional, objective summary that highlights the key performance and 
             
             # Ollama-Generated Executive Summary
             analysis_output += "📋 **Executive Summary:**\n"
-            ollama_summary = self._generate_ollama_summary(
+            ollama_summary = await self._generate_ollama_summary(
                 company_full_name,
                 ticker_symbol,
                 current_price,
                 ytd_return,
                 month_return,
                 market_cap,
-                pe_ratio,
+                float(pe_ratio) if pe_ratio is not None else 0.0,
                 indicators
             )
             analysis_output += f"{ollama_summary}\n\n"
@@ -1479,7 +1576,7 @@ class ActionShowChart(Action):
         return "action_show_chart"
     
     def generate_quickchart_url(self, labels: list, prices: list, 
-                                sma: list = None, rsi: list = None,
+                                sma: Optional[List[Optional[float]]] = None, rsi: Optional[List[Optional[float]]] = None,
                                 title: str = "", is_positive: bool = True) -> str:
         main_color = "rgb(0, 211, 149)" if is_positive else "rgb(255, 107, 107)"
         bg_color = "rgba(0, 211, 149, 0.2)" if is_positive else "rgba(255, 107, 107, 0.2)"
@@ -1562,7 +1659,7 @@ class ActionShowChart(Action):
         # Increased width to 900px for longer line
         return f"https://quickchart.io/chart?c={encoded}&backgroundColor=%231a1a2e&width=900&height=400"
 
-    def _calculate_sma(self, values: list, window: int = 20) -> list:
+    def _calculate_sma(self, values: list[float], window: int = 20) -> list[Optional[float]]:
         sma = []
         for i in range(len(values)):
             if i < window - 1:
@@ -1572,11 +1669,11 @@ class ActionShowChart(Action):
                 sma.append(round(avg, 2))
         return sma
 
-    def _calculate_rsi(self, values: list, window: int = 14) -> list:
+    def _calculate_rsi(self, values: list[float], window: int = 14) -> list[Optional[float]]:
         if len(values) < window + 1:
             return [None] * len(values)
         
-        rsi = [None] * len(values)
+        rsi: list[Optional[float]] = [None] * len(values)
         gains = []
         losses = []
         
@@ -1601,9 +1698,9 @@ class ActionShowChart(Action):
         
         return rsi
 
-    def run(self, dispatcher: CollectingDispatcher,
+    async def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+            domain: DomainDict) -> List[Dict[Text, Any]]:
         chart_asset = tracker.get_slot("chart_asset")
         print(f"Chart requested for: {chart_asset}")
 
@@ -1645,18 +1742,18 @@ class ActionShowChart(Action):
 
         if asset_lower in crypto_map or asset_lower in crypto_map.values():
             coin_id = crypto_map.get(asset_lower, asset_lower)
-            return self.show_crypto_chart(dispatcher, tracker, coin_id)
+            return await self.show_crypto_chart(dispatcher, tracker, coin_id)
         elif asset_lower in index_map:
             symbol = index_map.get(asset_lower)
-            return self.show_index_chart(dispatcher, tracker, asset_lower, symbol)
+            return await self.show_index_chart(dispatcher, tracker, asset_lower, symbol)
         else:
             ticker_symbol = _clean_ticker(chart_asset)
-            return self.show_stock_chart(dispatcher, tracker, ticker_symbol)
+            return await self.show_stock_chart(dispatcher, tracker, ticker_symbol)
 
-    def show_stock_chart(self, dispatcher, tracker, ticker_symbol):
+    async def show_stock_chart(self, dispatcher, tracker, ticker_symbol):
         try:
-            ticker = yf.Ticker(ticker_symbol)
-            hist = ticker.history(period="60d")
+            ticker = await asyncio.to_thread(yf.Ticker, ticker_symbol)
+            hist = await asyncio.to_thread(ticker.history, period="60d")
             if hist.empty:
                 raise ValueError("No data")
             
@@ -1693,11 +1790,10 @@ class ActionShowChart(Action):
             print(f"Stock chart error: {e}")
             return [SlotSet("chart_output", f"Error generating chart for {ticker_symbol}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
 
-    def show_crypto_chart(self, dispatcher, tracker, coin_id):
+    async def show_crypto_chart(self, dispatcher, tracker, coin_id):
         try:
-            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days=60"
-            response = requests.get(url, timeout=15)
-            data = response.json()
+            data = await fetch_coingecko_json(coin_id, vs_currency="usd", days=60, timeout_total=15)
+
             if "prices" not in data:
                 raise ValueError("No price data")
             prices_raw = data["prices"]
@@ -1732,14 +1828,17 @@ class ActionShowChart(Action):
                        f"30d Change: {price_change:+.2f}%\n"
                        f"20d SMA: ${sma[-1]:,.2f}  |  RSI(14): {last_rsi}")
             return [SlotSet("chart_output", message), SlotSet("chart_image_url", chart_url), FollowupAction("utter_chart_results")]
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            print(f"Crypto chart network error: {e}")
+            return [SlotSet("chart_output", f"Error generating chart for {coin_id}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
         except Exception as e:
             print(f"Crypto chart error: {e}")
             return [SlotSet("chart_output", f"Error generating chart for {coin_id}"), SlotSet("chart_image_url", ""), FollowupAction("utter_chart_results")]
 
-    def show_index_chart(self, dispatcher, tracker, index_name, symbol):
+    async def show_index_chart(self, dispatcher, tracker, index_name, symbol):
         try:
-            ticker = yf.Ticker(symbol)
-            hist = ticker.history(period="60d")
+            ticker = await asyncio.to_thread(yf.Ticker, symbol)
+            hist = await asyncio.to_thread(ticker.history, period="60d")
             if hist.empty:
                 raise ValueError("No data")
             full_labels = [date.strftime("%m/%d") for date in hist.index]
@@ -2183,8 +2282,8 @@ def _get_historical_price(ticker: str, date: str) -> float:
             return 0.0
         
         # Find the closest date
-        hist.index = hist.index.tz_localize(None)  # Remove timezone
-        time_diffs = (hist.index - target_date).to_series().abs()
+        hist_index = DatetimeIndex(hist.index).tz_localize(None)  # Remove timezone
+        time_diffs = (hist_index - target_date).to_series().abs()
         closest_idx = time_diffs.argmin()
         closing_price = hist['Close'].iloc[closest_idx]
         
@@ -2202,11 +2301,11 @@ class ActionSaveTransaction(Action):
     def name(self) -> Text:
         return "action_save_transaction"
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         try:
@@ -2229,17 +2328,22 @@ class ActionSaveTransaction(Action):
                     SlotSet("transaction_date", None)
                 ]
             
+            transaction_type_text = str(transaction_type)
+            transaction_shares_text = str(transaction_shares)
+            transaction_asset_text = str(transaction_asset)
+            transaction_date_text = str(transaction_date)
+
             # Convert to ticker
-            ticker = _clean_ticker(transaction_asset)
+            ticker = _clean_ticker(transaction_asset_text)
             print(f"DEBUG: Cleaned ticker = {ticker}")
             
             # Parse date
-            parsed_date = _parse_date(transaction_date)
+            parsed_date = _parse_date(transaction_date_text)
             print(f"DEBUG: Parsed date = {parsed_date}")
             
             # Get historical price
             print(f"DEBUG: Fetching historical price for {ticker} on {parsed_date}")
-            historical_price = _get_historical_price(ticker, parsed_date)
+            historical_price = await asyncio.to_thread(_get_historical_price, ticker, parsed_date)
             print(f"DEBUG: Historical price = {historical_price}")
             
             if historical_price == 0.0:
@@ -2256,12 +2360,13 @@ class ActionSaveTransaction(Action):
                 ]
             
             # Calculate total value
-            total_value = float(transaction_shares) * historical_price
+            transaction_shares_value = float(transaction_shares_text)
+            total_value = transaction_shares_value * historical_price
             
             # Create transaction data
             transaction_data = {
-                "transaction_type": transaction_type.lower(),
-                "amount": float(transaction_shares),
+                "transaction_type": transaction_type_text.lower(),
+                "amount": transaction_shares_value,
                 "asset": ticker,
                 "date": parsed_date,
                 "price_at_transaction": historical_price
@@ -2269,11 +2374,11 @@ class ActionSaveTransaction(Action):
             
             # Save to MongoDB
             print(f"DEBUG: Saving transaction to MongoDB")
-            transaction_id = mongo_db.save_transaction(transaction_data)
+            transaction_id = await asyncio.to_thread(mongo_db.save_transaction, transaction_data)
             print(f"DEBUG: Transaction saved with ID = {transaction_id}")
             message = (
                 f"✅ **Transaction Recorded!**\n\n"
-                f"Type: {transaction_type.upper()}\n"
+                f"Type: {transaction_type_text.upper()}\n"
                 f"Asset: {ticker}\n"
                 f"Shares: {transaction_shares}\n"
                 f"Price on {parsed_date}: ${historical_price:.2f}\n"
@@ -2309,7 +2414,7 @@ class ActionGetTransactions(Action):
     def name(self) -> Text:
         return "action_get_transactions"
     
-    def _calculate_positions(self, transactions: List[Dict]) -> Dict:
+    async def _calculate_positions(self, transactions: List[Dict]) -> Dict:
         """Calculate positions and P&L by asset"""
         positions = {}
         
@@ -2337,7 +2442,7 @@ class ActionGetTransactions(Action):
         
         # Calculate P&L with current prices
         for asset, data in positions.items():
-            current_price = _get_current_price(asset)
+            current_price = await asyncio.to_thread(_get_current_price, asset)
             current_value = data['shares'] * current_price
             total_cost = data['total_cost']
             pnl = current_value - total_cost
@@ -2351,15 +2456,15 @@ class ActionGetTransactions(Action):
         
         return positions
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         # Get all transactions
-        transactions = mongo_db.get_all_transactions()
+        transactions = await asyncio.to_thread(mongo_db.get_all_transactions)
         
         if not transactions:
             message = "📊 **Your Portfolio**\n\nNo transactions recorded yet.\n\nStart by recording a buy or sell transaction!"
@@ -2369,7 +2474,7 @@ class ActionGetTransactions(Action):
             ]
         
         # Calculate positions
-        positions = self._calculate_positions(transactions)
+        positions = await self._calculate_positions(transactions)
         
         # Build message
         message = "📊 **Your Portfolio**\n\n"
@@ -2420,18 +2525,18 @@ class ActionGetTransactions(Action):
             FollowupAction("utter_portfolio_results")
         ]
 
-#
+#Transaction
 class ActionGetTransactionsByAsset(Action):
     """Get transactions and P&L for a specific asset"""
     
     def name(self) -> Text:
         return "action_get_transactions_by_asset"
     
-    def run(
+    async def run(
         self,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
-        domain: Dict[Text, Any],
+        domain: DomainDict,
     ) -> List[Dict[Text, Any]]:
         
         filter_asset = tracker.get_slot("filter_asset")
@@ -2448,7 +2553,7 @@ class ActionGetTransactionsByAsset(Action):
         ticker = _clean_ticker(filter_asset)
         
         # Get transactions
-        transactions = mongo_db.get_transactions_by_asset(ticker)
+        transactions = await asyncio.to_thread(mongo_db.get_transactions_by_asset, ticker)
         
         if not transactions:
             message = f"No transactions found for {ticker}."
@@ -2479,7 +2584,7 @@ class ActionGetTransactionsByAsset(Action):
                 sell_count += 1
         
         # Get current price and calculate P&L
-        current_price = _get_current_price(ticker)
+        current_price = await asyncio.to_thread(_get_current_price, ticker)
         current_value = total_shares * current_price
         pnl = current_value - total_cost
         pnl_percent = (pnl / total_cost * 100) if total_cost != 0 else 0
@@ -2517,3 +2622,243 @@ class ActionGetTransactionsByAsset(Action):
             SlotSet("filter_asset", None),
             FollowupAction("utter_asset_transactions_results")
         ]
+
+logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+_AIOHTTP_SESSION: Optional[aiohttp.ClientSession] = None
+_AIOHTTP_SESSION_TIMEOUT: Optional[float] = None
+_SESSION_LOCK = asyncio.Lock()
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def _backoff_delay(attempt: int, base_delay: float, max_delay: float) -> float:
+    delay = min(max_delay, base_delay * (2 ** max(0, attempt - 1)))
+    jitter = random.uniform(0.0, delay * 0.1)
+    return delay + jitter
+
+
+async def get_shared_aiohttp_session(timeout_total: float = 10.0) -> aiohttp.ClientSession:
+    global _AIOHTTP_SESSION, _AIOHTTP_SESSION_TIMEOUT
+
+    if (
+        _AIOHTTP_SESSION is not None
+        and not _AIOHTTP_SESSION.closed
+        and _AIOHTTP_SESSION_TIMEOUT == timeout_total
+    ):
+        return _AIOHTTP_SESSION
+
+    async with _SESSION_LOCK:
+        if (
+            _AIOHTTP_SESSION is not None
+            and not _AIOHTTP_SESSION.closed
+            and _AIOHTTP_SESSION_TIMEOUT == timeout_total
+        ):
+            return _AIOHTTP_SESSION
+
+        # Close stale session if timeout changed
+        if _AIOHTTP_SESSION is not None and not _AIOHTTP_SESSION.closed:
+            await _AIOHTTP_SESSION.close()
+
+        _AIOHTTP_SESSION = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=timeout_total)
+        )
+        _AIOHTTP_SESSION_TIMEOUT = timeout_total
+        logger.debug("Created shared aiohttp session (timeout_total=%.2f)", timeout_total)
+
+    return _AIOHTTP_SESSION
+
+
+async def close_shared_aiohttp_session() -> None:
+    global _AIOHTTP_SESSION, _AIOHTTP_SESSION_TIMEOUT
+
+    async with _SESSION_LOCK:
+        session = _AIOHTTP_SESSION
+        if session is not None and not session.closed:
+            await session.close()
+            logger.debug("Closed shared aiohttp session")
+
+        _AIOHTTP_SESSION = None
+        _AIOHTTP_SESSION_TIMEOUT = None
+
+
+def close_shared_aiohttp_session_sync() -> None:
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(close_shared_aiohttp_session())
+    finally:
+        loop.close()
+
+
+atexit.register(close_shared_aiohttp_session_sync)
+
+
+async def _request_with_retry(
+    url: str,
+    *,
+    decode: Callable[[aiohttp.ClientResponse], Awaitable[T]],
+    method: str = "GET",
+    session: Optional[aiohttp.ClientSession] = None,
+    params: Optional[Mapping[str, Any]] = None,
+    json_body: Optional[Any] = None,
+    headers: Optional[Mapping[str, str]] = None,
+    timeout_total: float = 10.0,
+    retries: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 10.0,
+    retryable_status_codes: Sequence[int] = tuple(_RETRYABLE_STATUS_CODES),
+) -> T:
+    client_session = session or await get_shared_aiohttp_session(timeout_total=timeout_total)
+    retryable = set(retryable_status_codes)
+
+    if retries < 1:
+        raise ValueError(f"retries must be >= 1, got {retries}")
+
+    for attempt in range(1, retries + 1):
+        try:
+            async with client_session.request(
+                method,
+                url,
+                params=params,
+                json=json_body,
+                headers=headers,
+            ) as response:
+                if response.status in retryable:
+                    body = await response.text()
+                    raise aiohttp.ClientResponseError(
+                        response.request_info,
+                        response.history,
+                        status=response.status,
+                        message=body[:500],
+                        headers=response.headers,
+                    )
+
+                response.raise_for_status()
+                return await decode(response)
+
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            if attempt >= retries:
+                logger.exception("HTTP request failed for %s after %s attempts", url, attempt)
+                raise
+
+            delay = _backoff_delay(attempt, base_delay, max_delay)
+            logger.warning(
+                "Transient HTTP error for %s (attempt %s/%s); retrying in %.2fs",
+                url,
+                attempt,
+                retries,
+                delay,
+            )
+            await asyncio.sleep(delay)
+
+    raise RuntimeError("HTTP request retry loop exited unexpectedly")
+
+
+async def request_json(
+    url: str,
+    **kwargs: Any,
+) -> Any:
+    return await _request_with_retry(url, decode=lambda response: response.json(), **kwargs)
+
+
+async def request_text(
+    url: str,
+    **kwargs: Any,
+) -> str:
+    return await _request_with_retry(url, decode=lambda response: response.text(), **kwargs)
+
+
+async def request_json_many(
+    urls: Sequence[str],
+    *,
+    method: str = "GET",
+    session: Optional[aiohttp.ClientSession] = None,
+    timeout_total: float = 10.0,
+    retries: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 10.0,
+    retryable_status_codes: Sequence[int] = tuple(_RETRYABLE_STATUS_CODES),
+) -> list[Any]:
+    tasks = [
+        request_json(
+            url,
+            method=method,
+            session=session,
+            timeout_total=timeout_total,
+            retries=retries,
+            base_delay=base_delay,
+            max_delay=max_delay,
+            retryable_status_codes=retryable_status_codes,
+        )
+        for url in urls
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for url, result in zip(urls, results):
+        if isinstance(result, Exception):
+            logger.error("Failed to fetch %s: %s", url, result)
+
+    return list(results)
+
+
+async def fetch_alpha_vantage_json(
+    endpoint: str,
+    *,
+    api_key: str,
+    params: Optional[Mapping[str, Any]] = None,
+    timeout_total: float = 10.0,
+    session: Optional[aiohttp.ClientSession] = None,
+) -> Any:
+    request_params = dict(params or {})
+    request_params["apikey"] = api_key
+    return await request_json(
+        endpoint,
+        params=request_params,
+        session=session,
+        timeout_total=timeout_total,
+    )
+
+
+async def fetch_ollama_json(
+    endpoint: str = "http://localhost:11434/api/generate",
+    *,
+    model: str,
+    prompt: str,
+    timeout_total: float = 30.0,
+    session: Optional[aiohttp.ClientSession] = None,
+) -> Any:
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.3,
+            "num_predict": 150,
+        },
+    }
+    return await request_json(
+        endpoint,
+        method="POST",
+        json_body=payload,
+        session=session,
+        timeout_total=timeout_total,
+    )
+
+
+async def fetch_coingecko_json(
+    coin_id: str,
+    *,
+    vs_currency: str = "usd",
+    days: int = 60,
+    timeout_total: float = 15.0,
+    session: Optional[aiohttp.ClientSession] = None,
+) -> Any:
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+    params = {"vs_currency": vs_currency, "days": days}
+    return await request_json(
+        url,
+        params=params,
+        session=session,
+        timeout_total=timeout_total,
+    )

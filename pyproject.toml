@@ -1,0 +1,13 @@
+[project]
+name = "syp-rasa-finance"
+version = "0.1.0"
+description = "Rasa on finance industry"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.13.5",
+    "jieba>=0.42.1",
+    "rasa-pro>=3.16.5",
+    "sentence-transformers>=5.4.1",
+    "yfinance>=0.2.58",
+]

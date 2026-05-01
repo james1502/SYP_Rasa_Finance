@@ -10,19 +10,19 @@ KEYWORDS: valuation, P/E ratio, PEG ratio, book value, EV/EBITDA, intrinsic valu
 Valuation metrics help determine if a stock is overvalued, undervalued, or fairly priced.
 
 ## BEGINNER LEVEL
-- **P/E ratio** (Price‑to‑Earnings): Stock price ÷ earnings per share. A P/E of 15 means you pay $15 for $1 of earnings.  
-- **P/B ratio** (Price‑to‑Book): Stock price ÷ book value per share. Often used for banks.
+- **P/E ratio** (Price-to-Earnings): Stock price / earnings per share. A P/E of 15 means you pay $15 for $1 of earnings.  
+- **P/B ratio** (Price-to-Book): Stock price / book value per share. Often used for banks.
 
 ## INTERMEDIATE LEVEL
 - **Forward P/E**: Uses estimated future earnings, not past.  
-- **PEG ratio** = P/E ÷ annual earnings growth rate. A PEG < 1 may indicate undervaluation.  
-- **Dividend yield**: Annual dividend ÷ stock price.  
-- **EV/EBITDA**: Enterprise value (market cap + debt – cash) divided by EBITDA. Useful for comparing companies with different capital structures.  
-- **Price‑to‑Sales (P/S)**: For companies with no earnings.
+- **PEG ratio** = P/E / annual earnings growth rate. A PEG < 1 may indicate undervaluation.  
+- **Dividend yield**: Annual dividend / stock price.  
+- **EV/EBITDA**: Enterprise value (market cap + debt - cash) divided by EBITDA. Useful for comparing companies with different capital structures.  
+- **Price-to-Sales (P/S)**: For companies with no earnings.
 
 ## ADVANCED LEVEL
 - Discounted Cash Flow (DCF): projects future free cash flows and discounts them back to present value.  
 - Terminal value assumptions often dominate the DCF result.  
 - Sensitivity analysis: small changes in growth or discount rate drastically change fair value.  
-- Relative valuation (comps) vs. intrinsic valuation – using both provides a range.  
+- Relative valuation (comps) vs. intrinsic valuation - using both provides a range.  
 - Cyclical companies require normalized earnings over the cycle.

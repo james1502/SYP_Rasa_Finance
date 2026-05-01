@@ -11,19 +11,19 @@ When you analyze a stock, you look at a mix of price data, performance trends, t
 
 ## BEGINNER LEVEL
 Think of a stock analysis like a health check-up.  
-- **Price** is the current "pulse" – what you pay for one share right now.  
+- **Price** is the current "pulse" - what you pay for one share right now.  
 - **Market Cap** tells you the size of the company (small, mid, or large).  
 - **Performance (YTD, 1-month)** shows how much the stock has gone up or down recently.  
 - **Technical indicators** like moving averages and RSI give a sense of whether the stock is overbought (too expensive) or oversold (too cheap).  
 - **Valuation** (P/E, Forward P/E, PEG) tells you if the stock is fairly priced relative to what the company earns.  
-- **Volume** shows how many shares are being traded – like checking how crowded a shop is.
+- **Volume** shows how many shares are being traded - like checking how crowded a shop is.
 
 ## INTERMEDIATE LEVEL
 Here is what each metric means:
 
 **Price & Market Cap**  
 - *Price*: The current trading price of one share.  
-- *Market Cap*: Price × total shares outstanding. A quick measure of company size (large-cap >$10 billion; mid-cap $2-10 billion; small-cap <$2 billion).
+- *Market Cap*: Price  total shares outstanding. A quick measure of company size (large-cap >$10 billion; mid-cap $2-10 billion; small-cap <$2 billion).
 
 **Performance**  
 - *YTD (Year-to-Date)*: The percentage change in price from the first trading day of the year to today.  
@@ -52,12 +52,12 @@ Here is what each metric means:
 
 ## ADVANCED LEVEL
 - **Price vs. Intrinsic Value**: Current price may differ from fair value estimated by Discounted Cash Flow (DCF) models. Use valuation metrics as a quick check, not a full thesis.  
-- **Market Cap biases**: Mega‑cap stocks can be more stable but grow slower; micro‑caps carry higher growth potential but higher risk.  
+- **Market Cap biases**: Mega-cap stocks can be more stable but grow slower; micro-caps carry higher growth potential but higher risk.  
 - **Performance in context**: YTD and 1-month returns must be compared to a benchmark (e.g., S&P 500) and the sector. A 10% gain is weak if the market rose 20%.  
 - **SMA crossovers**: When the 20-day SMA crosses above the 50-day SMA, it's called a "golden cross"(bullish). The opposite is a "death cross"(bearish). These are lagging signals.  
 - **RSI nuances**: In a strong uptrend, RSI can remain overbought for extended periods without a pullback. Use together with volume and price action.  
 - **P/E limitations**: Earnings can be manipulated (non-GAAP vs. GAAP). P/E is meaningless for negative-earnings companies. Cyclical companies need normalized earnings.  
 - **Forward P/E risk**: Analyst estimates can be too optimistic. Always check earnings revision trends.  
 - **PEG pitfalls**: Growth rates are forecasts and can decline quickly. A low PEG with unstable growth is a value trap.  
-- **Volume analysis**: Volume spikes on earnings days, news events, or option expiration can distort the average. Volume precedes price – unusual volume often signals upcoming moves.  
-- **Putting it together**: A healthy stock often shows price above both SMAs, RSI in the 40–70 range, reasonable P/E relative to peers, and volume confirming the trend. Discrepancies (e.g., price rising but volume falling) demand caution.
+- **Volume analysis**: Volume spikes on earnings days, news events, or option expiration can distort the average. Volume precedes price - unusual volume often signals upcoming moves.  
+- **Putting it together**: A healthy stock often shows price above both SMAs, RSI in the 40-70 range, reasonable P/E relative to peers, and volume confirming the trend. Discrepancies (e.g., price rising but volume falling) demand caution.

@@ -7,19 +7,19 @@ KEYWORDS: mistakes, losses, panic selling, FOMO, overtrading, leverage
 
 # Common Investment Mistakes to Avoid
 
-Learning from others’ mistakes is cheaper than making your own.
+Learning from others' mistakes is cheaper than making your own.
 
 ## BEGINNER LEVEL
-1. Not starting early – compound growth needs time.  
-2. Panic selling in downturns – locks in losses.  
-3. Chasing hot stocks – often leads to buying at peaks.  
-4. No emergency fund – forces you to sell investments at the wrong time.  
-5. Ignoring fees – high fees compound against you.  
-6. No diversification – one stock can wipe you out.  
-7. Trying to time the market – missing the best days dramatically reduces returns.  
+1. Not starting early - compound growth needs time.  
+2. Panic selling in downturns - locks in losses.  
+3. Chasing hot stocks - often leads to buying at peaks.  
+4. No emergency fund - forces you to sell investments at the wrong time.  
+5. Ignoring fees - high fees compound against you.  
+6. No diversification - one stock can wipe you out.  
+7. Trying to time the market - missing the best days dramatically reduces returns.  
 8. Following tips without research.  
-9. Emotional investing – fear and greed cause poor decisions.  
-10. No investment plan – random buying leads to random results.
+9. Emotional investing - fear and greed cause poor decisions.  
+10. No investment plan - random buying leads to random results.
 
 ## INTERMEDIATE LEVEL
 Behavioral biases:  
@@ -34,5 +34,5 @@ Behavioral biases:
 - Overtrading: high turnover generates fees and taxes, hurting net returns.  
 - Overleveraging: using margin or options to amplify bets can lead to total loss.  
 - Survivorship bias: you only see the winners, not the many that failed.  
-- Backtesting overfit: a strategy that works historically may fail out‑of‑sample.  
+- Backtesting overfit: a strategy that works historically may fail out-of-sample.  
 - Mitigation: maintain a written investment policy statement (IPS), automate contributions, and review performance against a benchmark annually.

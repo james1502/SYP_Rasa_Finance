@@ -10,22 +10,22 @@ KEYWORDS: asset allocation, stock-bond mix, risk tolerance, rebalancing, glide p
 Asset allocation is how you divide your investment portfolio among different asset classes, such as stocks, bonds, and cash.
 
 ## BEGINNER LEVEL
-Think of a pizza divided into slices: one slice for stocks, one for bonds, one for cash. More stocks = more growth potential but bigger ups and downs. A simple starting point: subtract your age from 100 to get the % of stocks. A 30‑year‑old would have 70% stocks and 30% bonds.
+Think of a pizza divided into slices: one slice for stocks, one for bonds, one for cash. More stocks = more growth potential but bigger ups and downs. A simple starting point: subtract your age from 100 to get the % of stocks. A 30-year-old would have 70% stocks and 30% bonds.
 
 ## INTERMEDIATE LEVEL
 - Risk tolerance questionnaire: Helps determine the right mix based on when you need the money and how you react to losses.
-- Core asset classes: Domestic stocks, international stocks, investment‑grade bonds, real estate, cash.
+- Core asset classes: Domestic stocks, international stocks, investment-grade bonds, real estate, cash.
 - Model portfolios:
   - Conservative: 30% stocks / 70% bonds
   - Moderate: 60% stocks / 40% bonds
   - Aggressive: 80%+ stocks
 - Rebalancing: Once a year, sell winners and buy underweight assets to return to your target.
-- Target‑date funds automatically shift allocation as the target year approaches.
+- Target-date funds automatically shift allocation as the target year approaches.
 
 ## ADVANCED LEVEL
 - Efficient frontier: Optimize asset mix for maximum return per unit of risk (Sharpe ratio).
-- Factor‑based allocation: Tilting towards value, size, momentum, quality.
+- Factor-based allocation: Tilting towards value, size, momentum, quality.
 - Dynamic allocation: Adjusting based on market valuations (e.g., Shiller CAPE) or economic cycle.
 - Glide path in retirement: Reducing equities gradually before and after retirement to manage sequence risk.
-- Non‑traditional assets: REITs, commodities, private equity can improve diversification but may add illiquidity.
+- Non-traditional assets: REITs, commodities, private equity can improve diversification but may add illiquidity.
 - Policy statement: Document your target allocation, rebalancing rules, and review process to avoid emotional decisions.

@@ -14,14 +14,14 @@ If the stock market were a weather forecast, technical analysis would look at pa
 
 ## INTERMEDIATE LEVEL
 - **Trend**: A series of higher highs (uptrend) or lower lows (downtrend). "The trend is your friend."
-- **Moving averages (MA)**: Smooth out price data. A rising 20‑day MA signals short‑term strength. When a short MA crosses above a longer MA, it's a "golden cross" (bullish).
-- **Relative Strength Index (RSI)**: Measures momentum on a scale of 0‑100. Above 70 = overbought, below 30 = oversold.
+- **Moving averages (MA)**: Smooth out price data. A rising 20-day MA signals short-term strength. When a short MA crosses above a longer MA, it's a "golden cross" (bullish).
+- **Relative Strength Index (RSI)**: Measures momentum on a scale of 0-100. Above 70 = overbought, below 30 = oversold.
 - **Volume**: Heavy volume confirms a move, light volume questions it.
 - **Common patterns**: Head and shoulders (reversal), cup and handle (continuation).
 
 ## ADVANCED LEVEL
-- **Breadth indicators**: Advance‑decline line, new highs/new lows. They reveal participation behind index moves.
-- **Divergence**: Price makes a new high while RSI makes a lower high → momentum weakening.
+- **Breadth indicators**: Advance-decline line, new highs/new lows. They reveal participation behind index moves.
+- **Divergence**: Price makes a new high while RSI makes a lower high to momentum weakening.
 - **Fibonacci retracements**: 38.2%, 50%, 61.8% levels that often act as support/resistance.
 - **Intermarket analysis**: Bonds, currencies, and commodities all influence equity charts.
-- **Limitations**: Chart patterns can be self‑fulfilling but often fail; always combine with risk management.
+- **Limitations**: Chart patterns can be self-fulfilling but often fail; always combine with risk management.

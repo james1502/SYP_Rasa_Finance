@@ -51,7 +51,7 @@ slots:
       - type: controlled
 
   market_data_output:
-    type: text
+    type: any
     mappings:
       - type: controlled
 
@@ -76,9 +76,9 @@ slots:
       - type: controlled
 
   chart_asset:
-      type: text
-      mappings:
-        - type: from_llm
+    type: text
+    mappings:
+      - type: from_llm
 
   chart_output:
     type: text
@@ -141,12 +141,12 @@ slots:
 
 
 actions:
+  - action_detect_language
   - action_fetch_market_data
   - action_fetch_index_info
   - action_fetch_market_news
   - action_fetch_comparison_data
   - action_correct_typo
-  - validate_comparison_items
   - action_fetch_analysis
   - action_show_chart
   #extract
@@ -201,9 +201,34 @@ responses:
         rephrase: false
 
   utter_market_data_results:
-    - text: "Here's the market data for {security_name}:\n{market_data_output}"
+    - text: |
+        Here's the market data for {{security_name}}:
+        
+        {% if market_data_output.error %}
+        ❌ {{market_data_output.error}}
+        {% elif market_data_output.type == 'crypto' %}
+        💰 {{market_data_output.ticker}}
+        
+        Current Price: ${{market_data_output.current_price|round(2)}}
+        Change: ${{market_data_output.change|round(2)}} ({{market_data_output.change_percent|round(2)}}%)
+        24h Volume: {{market_data_output.volume|int}}
+        Day High: ${{market_data_output.day_high|round(2)}}
+        Day Low: ${{market_data_output.day_low|round(2)}}
+        52-Week High: ${{market_data_output.high_52week|round(2)}}
+        52-Week Low: ${{market_data_output.low_52week|round(2)}}
+        {% else %}
+        📊 {{market_data_output.ticker}}
+        
+        Current Price: ${{market_data_output.current_price|round(2)}}
+        Change: ${{market_data_output.change|round(2)}} ({{market_data_output.change_percent|round(2)}}%)
+        Volume: {{market_data_output.volume|int}}
+        Day High: ${{market_data_output.day_high|round(2)}}
+        Day Low: ${{market_data_output.day_low|round(2)}}
+        52-Week High: ${{market_data_output.high_52week|round(2)}}
+        52-Week Low: ${{market_data_output.low_52week|round(2)}}
+        {% endif %}
       metadata:
-        rephrase: false
+        template: jinja
 
   utter_ask_index_name:
     - text: "Which market index are you interested in? For example: S&P 500, NASDAQ, DJIA, or FTSE 100."
@@ -222,8 +247,6 @@ responses:
 
   utter_news_results:
     - text: "Here are the latest news items about {news_topic}:\n{news_output}"
-      metadata:
-        rephrase: false
 
   utter_ask_comparison_items:
     - text: "What would you like to compare? Please specify the securities or indexes (you can list multiple items separated by commas)."
@@ -247,8 +270,11 @@ responses:
 
   utter_goodbye:
     - text: "Thank you for using the Financial Market Assistant. Have a great day!"
+      translation:
+        zh-TW: "感謝您使用財務市場助手。祝您美好的一天！"
+        zh-CN: "感谢您使用财务市场助手。祝您美好的一天！"
       metadata:
-        rephrase: false
+        rephrase: false    
 
   utter_cannot_handle:
     - text: "I'm sorry, I couldn't process that request. Could you rephrase or ask something else?"
@@ -267,6 +293,9 @@ responses:
 
   utter_can_do_something_else:
     - text: "What else can I help you with?"
+      translation:
+        zh-TW: "還有什麼我可以幫忙的嗎？"
+        zh-CN: "还有什么我可以帮忙的吗？"
       metadata:
         rephrase: false
 

@@ -16,20 +16,20 @@ Risk is the possibility of losing money. The faster you drive (higher risk), the
 - Inflation risk: purchasing power loss.  
 - Liquidity risk: inability to sell quickly.
 
-Basic rules: don’t invest money you need within 5 years, diversify, keep a cash emergency fund.
+Basic rules: don't invest money you need within 5 years, diversify, keep a cash emergency fund.
 
 ## INTERMEDIATE LEVEL
 Measuring risk:  
 - **Standard deviation**: Higher = more volatile.  
 - **Beta**: >1 means more volatile than the market.  
 - **Sharpe ratio**: Return per unit of risk.  
-- **Maximum drawdown**: Peak‑to‑trough decline.
+- **Maximum drawdown**: Peak-to-trough decline.
 
-Position sizing: Never risk more than 1‑2% of your portfolio on a single trade.  
-Formula: Position size = (Portfolio × Risk%) / (Entry – Stop loss).
+Position sizing: Never risk more than 1-2% of your portfolio on a single trade.  
+Formula: Position size = (Portfolio * Risk%) / (Entry - Stop loss).
 
 ## ADVANCED LEVEL
 - **Value at Risk (VaR)**: Maximum expected loss at a given confidence level.  
 - **Conditional VaR** (CVaR) looks at average loss beyond VaR.  
 - **Kelly Criterion** optimises bet size for repeated gambles.  
-- Tail‑risk hedging using out‑of‑the‑money puts, gold, or trend following.
+- Tail-risk hedging using out-of-the-money puts, gold, or trend following.

@@ -25,7 +25,10 @@ flows:
       Set the user's investment knowledge level when they say "I'm a beginner", 
       "I'm experienced", "I'm an expert", "I'm new to investing", or ask to change their level.
       Also triggered by phrases like "explain for beginners", "I'm advanced", "simple explanation".
+    persisted_slots:
+      - user_expertise_level
     steps:
+      - action: action_detect_language
       - collect: user_expertise_level
         description: >
           Extract the expertise level from the user's message.
@@ -40,13 +43,14 @@ flows:
       - action: utter_expertise_set
         
   # Educational search flow
-  search_flow:
+  pattern_search:
     description: >
       Answer educational questions about investment concepts, definitions, and financial terminology.
       Use when user asks "what is", "what are", "explain", "define", or "tell me about" followed by an investment concept.
       Examples: "what is a stock", "explain ETFs", "define dividend", "tell me about bonds".
       NOT for: company data, prices, news, or comparisons.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_trigger_search
 
@@ -56,10 +60,14 @@ flows:
       Get real-time stock data for a specific company or ticker symbol.
       Trigger when user mentions a company name or ticker with data-related keywords.
       Examples: "Apple stock price", "AAPL price", "Tesla volume", "Microsoft stock data", "show me Google price".
-      Companies: Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix.
-      Tickers: AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX.
+      "bitcoin price", "BTC price", "BTC-USD price", "ethereum price", "ETH price", "ETH-USD price".
+      Stocks (examples): Apple, Tesla, Microsoft, Google, Amazon, Meta, Nvidia, Netflix.
+      Stock tickers (examples): AAPL, TSLA, MSFT, GOOGL, AMZN, META, NVDA, NFLX.
+      Crypto assets (examples): Bitcoin, Ethereum.
+      Crypto tickers (examples): BTC-USD, ETH-USD.      
       NOT for: market indexes (use handle_index_info_query), news (use handle_market_news_query), or comparisons (use handle_comparison_query).
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_security_name
       - id: check_security_extraction
@@ -74,6 +82,7 @@ flows:
         description: >
           Extract the company name or ticker symbol from the user's message.
           Examples: "Apple" from "Apple stock price", "AAPL" from "AAPL price", "Tesla" from "Tesla data".
+          "bitcoin" from "bitcoin price", "BTC" from "BTC price", "BTC-USD" from "BTC-USD price".
           Extract only the company name or ticker, removing words like stock, price, data, volume, current, show, me.
         next: fetch_market_data
       
@@ -90,6 +99,7 @@ flows:
       Market indexes are collections of stocks measuring market performance, NOT individual companies.
       NOT for: individual company stocks (use handle_market_data_query), news queries, or company-specific data.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_index_name
       - id: check_index_extraction
@@ -119,6 +129,7 @@ flows:
       Examples: "Tesla news", "Apple headlines", "news about Amazon", "tech news", "market news".
       NOT for: educational questions without news keyword, price queries, or general company information.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_news_topic
       - id: check_news_extraction
@@ -148,6 +159,7 @@ flows:
       Requires at least two company names or tickers.
       NOT for: single company queries.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_comparison_items
       - id: check_comparison_extraction
@@ -191,6 +203,7 @@ flows:
       Supports stocks, cryptocurrencies, and market indexes.
       NOT for: price queries without chart keyword (use handle_market_data_query), news queries, or analysis requests.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_chart_asset
       - id: check_chart_extraction
@@ -219,6 +232,7 @@ flows:
       Requires a specific company name or ticker.
       NOT for: price queries, news queries, or comparison queries.
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: action_extract_analysis_company
       - id: check_analysis_extraction
@@ -245,6 +259,7 @@ flows:
     description: >
       Greet the user when they initiate conversation with hello, hi, hey, good morning, good afternoon, or good evening.
     steps:
+      - action: action_detect_language
       - action: utter_greet
       - action: utter_offer_help
 
@@ -252,7 +267,9 @@ flows:
   end_conversation:
     description: >
       End the conversation gracefully when user says goodbye, bye, exit, quit, or indicates they want to end the conversation.
+    run_pattern_completed: false
     steps:
+      - action: action_detect_language
       - action: action_correct_typo
       - action: utter_goodbye
 
@@ -264,18 +281,18 @@ flows:
       - action: utter_can_do_something_else
 
   # Intent clarification
-  
+
   pattern_clarification:
     description: Handle ambiguous requests that could match multiple flows by asking the user to clarify their intent
     steps:
       - noop: true
         next:
           - if: context.names
-            then: action_clarify_flows
+            then: clarify_flows_step
           - else:
-            - action: utter_clarification_no_options_rasa
-              next: END
-      - id: action_clarify_flows
+              - action: utter_clarification_no_options_rasa
+                next: END
+      - id: clarify_flows_step
         action: action_clarify_flows
       - action: utter_clarification_options_rasa
 
@@ -286,6 +303,7 @@ flows:
       Collects transaction type, amount, asset, and date.
     name: "Record Transaction"
     steps:
+      - action: action_detect_language
       - collect: transaction_type
         description: >
           The type of transaction: buy, sell, deposit, or withdrawal.
@@ -315,6 +333,7 @@ flows:
       View complete portfolio with positions and profit/loss calculations.
       Trigger when user says "show my portfolio", "view my positions", "show my P&L", "what's my profit and loss", or "portfolio summary".
     steps:
+      - action: action_detect_language
       - action: action_get_transactions
 
   # Record buy transaction
@@ -324,6 +343,7 @@ flows:
       Trigger when user says "I bought [asset]", "I bought [number] shares of [asset]", or "record buy of [asset]".
       Examples: "I bought 5 shares of Apple", "I bought TSLA for $500", "record buy of Microsoft".
     steps:
+      - action: action_detect_language
       - set_slots:
           - transaction_type: "buy"
       
@@ -350,6 +370,7 @@ flows:
       Record a sell transaction for a stock or asset.
       Trigger when user says "I sold [asset]", "record sell", or "add sell transaction".
     steps:
+      - action: action_detect_language
       - set_slots:
           - transaction_type: "sell"
       
@@ -375,6 +396,7 @@ flows:
       View transaction history from the database.
       Trigger when user says "show my transactions", "view transaction history", "list my transactions", or "show all transactions".
     steps:
+      - action: action_detect_language
       - action: action_get_transactions
 
   # Check by asset
@@ -384,6 +406,7 @@ flows:
       Trigger when user says "show [asset] transactions", "transactions for [asset]", or "view [asset] history".
       Examples: "show Apple transactions", "transactions for TSLA", "view Bitcoin history".
     steps:
+      - action: action_detect_language
       - collect: filter_asset
         description: >
           Extract the asset to filter by.

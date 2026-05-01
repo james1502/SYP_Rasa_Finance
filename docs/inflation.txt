@@ -10,19 +10,19 @@ KEYWORDS: inflation, CPI, purchasing power, real return, deflation, hyperinflati
 Inflation is the general rise in prices over time, meaning each dollar buys less.
 
 ## BEGINNER LEVEL
-A $5 coffee today might cost $10 in 20 years if prices rise 3.5% a year. If your money just sits in a checking account earning 0.1%, you’re losing buying power every year. That’s why investing is important – you need your money to grow at least as fast as inflation.
+A $5 coffee today might cost $10 in 20 years if prices rise 3.5% a year. If your money just sits in a checking account earning 0.1%, you're losing buying power every year. That's why investing is important - you need your money to grow at least as fast as inflation.
 
 ## INTERMEDIATE LEVEL
 - **Consumer Price Index (CPI)**: Measures average price change for a basket of goods and services.
 - **Headline vs. core inflation**: Core inflation excludes food and energy, which are volatile.
 - **Real return**: Your investment return minus inflation. If you earn 6% and inflation is 3%, your real return is about 3%.
-- **Inflation and bonds**: Rising inflation erodes fixed‑coupon bond values; TIPS (Treasury Inflation‑Protected Securities) adjust principal with CPI.
+- **Inflation and bonds**: Rising inflation erodes fixed-coupon bond values; TIPS (Treasury Inflation-Protected Securities) adjust principal with CPI.
 - **Wage stickiness**: Salaries often lag inflation, reducing real income temporarily.
 
 ## ADVANCED LEVEL
 - **Monetary policy**: Central banks (e.g., Fed) raise interest rates to tame inflation, which can slow the economy and lower stock prices.
 - **Inflation expectations**: Embedded in bond yields; the breakeven inflation rate is the difference between nominal and TIPS yields.
-- **Asset performance during inflation**: Equities offer long‑term protection; commodities and real estate often hedge short‑term inflation spikes.
+- **Asset performance during inflation**: Equities offer long-term protection; commodities and real estate often hedge short-term inflation spikes.
 - **Hyperinflation**: Extreme (>50% monthly) destroys currency value (e.g., Zimbabwe, Venezuela).
 - **Deflation**: Falling prices can cause consumers to delay spending, leading to recession.
-- **Personal strategies**: Own productive assets, lock low fixed‑rate debt, and negotiate inflation‑adjusted income streams.
+- **Personal strategies**: Own productive assets, lock low fixed-rate debt, and negotiate inflation-adjusted income streams.

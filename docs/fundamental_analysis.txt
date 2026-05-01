@@ -15,13 +15,13 @@ You're a detective trying to find out if a company is healthy. You look at how m
 ## INTERMEDIATE LEVEL
 - **Quantitative factors**: Revenue, earnings, cash flow, debt, profit margins, P/E ratio.
 - **Qualitative factors**: Management quality, brand power, patents, industry tailwinds.
-- **Economic moat**: A sustainable competitive advantage (e.g., Coca‑Cola's brand, Google's search dominance).
+- **Economic moat**: A sustainable competitive advantage (e.g., Coca-Cola's brand, Google's search dominance).
 - **Management assessment**: Honest, competent leaders who allocate capital wisely.
-- **Competitive analysis**: Porter's Five Forces – barriers to entry, supplier power, buyer power, substitute threats, rivalry.
+- **Competitive analysis**: Porter's Five Forces - barriers to entry, supplier power, buyer power, substitute threats, rivalry.
 
 ## ADVANCED LEVEL
 - **Discounted Cash Flow (DCF)**: The gold standard for estimating intrinsic value, heavily sensitive to growth and discount rate assumptions.
 - **Reverse DCF**: Derives the growth rate implied by the current stock price.
-- **Sum‑of‑the‑parts (SOTP)**: Values conglomerates by appraising each business segment separately.
+- **Sum-of-the-parts (SOTP)**: Values conglomerates by appraising each business segment separately.
 - **Normalized earnings**: Adjusting cyclical earnings to estimate sustainable profit.
 - **Behavioral edge**: Markets often misprice stocks due to overreaction; fundamental analysis attempts to exploit that gap.

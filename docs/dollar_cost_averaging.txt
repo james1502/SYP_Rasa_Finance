@@ -1,4 +1,4 @@
-﻿---
+---
 TOPIC: Dollar-Cost Averaging
 CATEGORY: Investment Strategy
 RELATED_CONCEPTS: Systematic Investing, Market Timing, Volatility

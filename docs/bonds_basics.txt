@@ -16,14 +16,14 @@ You lend $1,000 to your city for 10 years. The city pays you $40 every year (4% 
 Key terms:  
 - **Face value (Par)**: What you are repaid at maturity (usually $1,000).  
 - **Coupon rate**: The annual interest percentage.  
-- **Yield to Maturity (YTM)**: The total return if held until maturity, which changes as the bond’s market price fluctuates.  
+- **Yield to Maturity (YTM)**: The total return if held until maturity, which changes as the bond's market price fluctuates.  
 - **Credit rating**: AAA (safest) to D (in default).  
 - **Duration**: Measures sensitivity to interest rate changes. Higher duration = bigger price swings.
 
 ## ADVANCED LEVEL
 Yield curve shapes:  
-- Normal (upward‑sloping) – long‑term yields higher than short‑term.  
-- Inverted (short‑term yields higher) – often a recession signal.  
+- Normal (upward-sloping) - long-term yields higher than short-term.  
+- Inverted (short-term yields higher) - often a recession signal.  
 - Convexity improves on duration estimates for large yield changes.  
 - Callable bonds: issuer can redeem early, introducing reinvestment risk.  
-- Credit spreads widen (risk‑off) or narrow (risk‑on) reflecting market outlook.
+- Credit spreads widen (risk-off) or narrow (risk-on) reflecting market outlook.
